@@ -406,6 +406,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "branch-diff"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "gix",
+]
+
+[[package]]
 name = "bstr"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
