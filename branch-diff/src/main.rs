@@ -1,9 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
+use gix::bstr::ByteSlice;
+use gix::diff::blob::{unified_diff::{ContextSize, NewlineSeparator}, UnifiedDiff};
 use gix::object::tree::diff::{Change, ChangeDetached};
 use gix::prelude::*;
+use gix::hash::ObjectId;
 use gix::Repository;
-use gix_hash::ObjectId;
 
 /// Show file changes in a branch relative to a base branch.
 #[derive(Parser, Debug)]
@@ -18,37 +20,64 @@ struct Args {
 
     /// Name of the base branch. If omitted, it will be detected automatically.
     base: Option<String>,
+
+    /// Output unified diff instead of a summary.
+    #[arg(long)]
+    patch: bool,
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
-    let repo = gix::discover(&args.repo).context("open repository")?;
+    run(Args::parse())
+}
 
-    let branch = match args.branch {
+fn run(args: Args) -> Result<()> {
+    let repo = gix::discover(&args.repo).context("open repository")?;
+    let branch = current_branch(&repo, args.branch)?;
+    let rhs_id = resolve_ref(&repo, &branch).context("resolve branch")?;
+
+    let base = detect_or_default_base(&repo, args.base, &branch, rhs_id)?;
+    let lhs_id = resolve_ref(&repo, &base).context("resolve base branch")?;
+
+    if args.patch {
+        show_patch(&repo, lhs_id, rhs_id)
+    } else {
+        show_summary(&repo, lhs_id, rhs_id)
+    }
+}
+
+fn current_branch(repo: &Repository, branch_arg: Option<String>) -> Result<String> {
+    Ok(match branch_arg {
         Some(b) => b,
         None => repo
             .head_name()?
             .context("current branch is detached")?
-            .to_string()
-            .trim_start_matches("refs/heads/")
-            .to_string(),
-    };
+            .shorten()
+            .to_str()
+            .context("branch name invalid UTF-8")?
+            .to_owned(),
+    })
+}
 
-    let rhs_id = repo
-        .rev_parse_single(format!("refs/heads/{}", branch))
-        .context("resolve branch")?;
+fn resolve_ref(repo: &Repository, name: &str) -> Result<ObjectId> {
+    let spec = format!("refs/heads/{}", name);
+    Ok(repo.rev_parse_single(spec.as_str())?.detach())
+}
 
-    let base = match args.base {
-        Some(b) => Some(b),
-        None => detect_base_branch(&repo, &branch, rhs_id.detach())?,
-    };
+fn detect_or_default_base(
+    repo: &Repository,
+    base_arg: Option<String>,
+    branch: &str,
+    head_id: ObjectId,
+) -> Result<String> {
+    match base_arg {
+        Some(b) => Ok(b),
+        None => detect_base_branch(repo, branch, head_id)?
+            .ok_or_else(|| anyhow!("no base branch found"))
+            .or_else(|_| Ok("master".to_string())),
+    }
+}
 
-    let base = base.unwrap_or_else(|| "master".to_string());
-
-    let lhs_id = repo
-        .rev_parse_single(format!("refs/heads/{}", base))
-        .context("resolve base branch")?;
-
+fn show_summary(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result<()> {
     let lhs_commit = repo.find_commit(lhs_id)?;
     let rhs_commit = repo.find_commit(rhs_id)?;
 
@@ -59,22 +88,22 @@ fn main() -> Result<()> {
         repo.diff_tree_to_tree(Some(&lhs_tree), Some(&rhs_tree), None)?;
 
     for change in changes {
-        let change = change.attach(&repo, &repo);
+        let change = change.attach(repo, repo);
         match change {
             Change::Addition { location, .. } => {
-                println!("A\t{}", location.to_string_lossy());
+                println!("A\t{}", location.to_str_lossy());
             }
             Change::Deletion { location, .. } => {
-                println!("D\t{}", location.to_string_lossy());
+                println!("D\t{}", location.to_str_lossy());
             }
             Change::Modification { location, .. } => {
-                println!("M\t{}", location.to_string_lossy());
+                println!("M\t{}", location.to_str_lossy());
             }
             Change::Rewrite { location, source_location, .. } => {
                 println!(
                     "R\t{} -> {}",
-                    source_location.to_string_lossy(),
-                    location.to_string_lossy()
+                    source_location.to_str_lossy(),
+                    location.to_str_lossy()
                 );
             }
         }
@@ -82,13 +111,90 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+
+fn show_patch(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result<()> {
+    let lhs_commit = repo.find_commit(lhs_id)?;
+    let rhs_commit = repo.find_commit(rhs_id)?;
+
+    let lhs_tree = lhs_commit.tree()?;
+    let rhs_tree = rhs_commit.tree()?;
+
+    let changes: Vec<ChangeDetached> =
+        repo.diff_tree_to_tree(Some(&lhs_tree), Some(&rhs_tree), None)?;
+
+    let mut cache = repo.diff_resource_cache_for_tree_diff()?;
+
+    for change in changes {
+        let change = change.attach(repo, repo);
+        print_patch(&mut cache, change)?;
+    }
+    Ok(())
+}
+
+fn print_patch(
+    cache: &mut gix::diff::blob::Platform,
+    change: Change<'_, '_ , '_>,
+) -> Result<()> {
+    use gix::diff::blob::platform::prepare_diff::Operation;
+    let (old_path, new_path) = match &change {
+        Change::Rewrite { source_location, location, .. } => (source_location.as_bstr(), location.as_bstr()),
+        Change::Addition { location, .. }
+        | Change::Deletion { location, .. }
+        | Change::Modification { location, .. } => (location.as_bstr(), location.as_bstr()),
+    };
+    if change.entry_mode().is_tree() {
+        return Ok(());
+    }
+    println!("diff --git a/{} b/{}", old_path.to_str_lossy(), new_path.to_str_lossy());
+
+    let platform = change.diff(cache)?;
+    let outcome = platform.resource_cache.prepare_diff()?;
+    let algorithm = match outcome.operation {
+        Operation::InternalDiff { algorithm } => algorithm,
+        Operation::ExternalCommand { .. } => unreachable!("external diffs disabled"),
+        Operation::SourceOrDestinationIsBinary => {
+            println!("Binary files differ");
+            return Ok(());
+        }
+    };
+    let input = gix::diff::blob::intern::InternedInput::new(
+        tokens_for_diffing(outcome.old.data.as_slice().unwrap_or_default()),
+        tokens_for_diffing(outcome.new.data.as_slice().unwrap_or_default()),
+    );
+
+    let diff = gix::diff::blob::diff(
+        algorithm,
+        &input,
+        UnifiedDiff::new(
+            &input,
+            Vec::new(),
+            NewlineSeparator::AfterHeaderAndLine("\n"),
+            ContextSize::symmetrical(3),
+        ),
+    )?;
+    print!("{}", std::str::from_utf8(&diff)?);
+    Ok(())
+}
+
+fn tokens_for_diffing(data: &[u8]) -> impl gix::diff::blob::intern::TokenSource<Token = &[u8]> {
+    gix::diff::blob::sources::byte_lines(data)
+}
+
 /// Try to detect the branch from which `branch` diverged.
-fn detect_base_branch(repo: &Repository, branch: &str, head_id: gix_hash::ObjectId) -> Result<Option<String>> {
-    let mut refs = repo.references()?.local_branches()?.peeled()?;
+fn detect_base_branch(repo: &Repository, branch: &str, head_id: ObjectId) -> Result<Option<String>> {
+    let refs = repo.references()?;
+    let refs = refs.local_branches()?;
+    let refs = refs.peeled()?;
     let mut best: Option<(String, i64)> = None;
     for reference in refs {
-        let mut reference = reference?;
-        let name = reference.name().to_string();
+        let mut reference = reference.map_err(|e| anyhow!(e))?;
+        let name = reference
+            .name()
+            .to_owned()
+            .as_bstr()
+            .to_str()
+            .map_err(|e| anyhow!(e))?
+            .to_owned();
         if name.trim_start_matches("refs/heads/") == branch {
             continue;
         }
