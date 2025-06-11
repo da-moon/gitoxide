@@ -1,0 +1,12 @@
+[package]
+name = "merge-preview"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+gix = { path = "../gix", default-features = false, features = ["revision", "merge"] }
+
+[lints]
+workspace = true

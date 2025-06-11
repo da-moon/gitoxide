@@ -2,21 +2,20 @@
 
 ### Mandatory Cargo Aliases Usage
 
-This project uses pre-configured Cargo aliases for offline builds with
-optimized output formatting. **ALWAYS use these aliases - never use standard
-cargo commands:**
+This project uses pre-configured Cargo aliases to provide concise output.
+**ALWAYS use these aliases - never use standard cargo commands:**
 
-- `cargo build-offline` - Build project offline with concise message format
-- `cargo check-offline` - Check the project offline with short message format
-- `cargo test-offline` - Execute tests offline with structured output
-- `cargo run-offline` - Run application offline with proper environment
-- `cargo clippy-offline` - Run clippy offline with short message format
+- `cargo build-short` - Build the project with short message format
+- `cargo check-short` - Check the project with short message format
+- `cargo test-short` - Execute tests with structured output
+- `cargo run-short` - Run applications with proper environment
+- `cargo clippy-short` - Run clippy with short message format
 
 ### Critical Build Rules
 
 - **NEVER** use `cargo build`, `cargo test`, or `cargo run` directly
-- **ALWAYS** append `-offline` to build/test/run commands
-- **IMMEDIATELY** run `cargo check-offline` and `cargo fmt` after any code
+- **ALWAYS** use the provided Cargo aliases
+- **IMMEDIATELY** run `cargo check-short` and `cargo fmt` after any code
   change to ensure it compiles
 - **MANDATORY** validation sequence before any commit (see Validation Commands
   section)
@@ -28,7 +27,7 @@ cargo commands:**
 #### Incremental Development Methodology
 
 - **Atomic Changes**: Make small, focused changes with single responsibility
-- **Immediate Verification**: Run `cargo check-offline` after every
+- **Immediate Verification**: Run `cargo check-short` after every
   modification
 - **Compilation-First**: Ensure code compiles before adding new functionality
 - **Test-Driven Validation**: Write tests before implementing complex logic
@@ -41,7 +40,7 @@ cargo commands:**
   system
 - **Cognitive Load**: Limit nesting depth to 3 levels, prefer early returns
 - **Dead Code Elimination**: Remove unused code immediately - use
-  `cargo clippy-offline` to detect
+  `cargo clippy` to detect
 
 ### Rust-Specific Best Practices
 
@@ -167,7 +166,7 @@ cargo commands:**
 
 #### Test Execution & Lifecycle
 
-- **Standard Execution**: Always use `cargo test-offline` for test execution
+- **Standard Execution**: Always use `cargo test-short` for test execution
 - **Test Data Management**: Utilize `test_data/` directory for test fixtures
   and sample data
 - **Environment Management**: Each test should setup, execute, verify, and
@@ -199,10 +198,10 @@ specified order:
 
 ```bash
 # 1. Compilation verification
-cargo build-offline --message-format short
+cargo build-short
 
 # 2. Test suite execution
-cargo test-offline --message-format short
+cargo test-short
 ```
 
 ### End-to-End Validation Scripts
@@ -226,7 +225,7 @@ as needed for comprehensive validation.
 
 1. **Atomic Changes**: Make small, focused code modifications with single
    responsibility
-2. **Immediate Verification**: Run `cargo check-offline` after each change for
+2. **Immediate Verification**: Run `cargo check-short` after each change for
    fast feedback
 3. **Compilation Verification**: Ensure code compiles successfully before
    proceeding
@@ -266,46 +265,42 @@ as needed for comprehensive validation.
 
 ### Dependency Management & Security
 
-#### Offline Development Environment
+#### Online Development Environment
 
-- **Vendored Dependencies**: All dependencies pre-vendored in `vendor/`
-  directory for offline builds
+- **Crates.io Source**: Dependencies are fetched from crates.io
 - **Version Strategy**: Use exact versions (=) for critical dependencies, caret
   requirements (^) for others
 - **Feature Minimalism**: Enable only necessary features to reduce binary size
   and attack surface
 - **Static Linking Verification**: Test binaries with `ldd` to confirm
   successful static linking
-- **Network Isolation**: Never attempt network-dependent cargo operations in
-  this environment
 
 #### Vendored Source Code Learning
 
 When LLM agents need to understand external library APIs, documentation, or
 usage patterns:
 
-- **Primary Source**: Read source code directly from `vendor/` directory for
-  the most accurate and up-to-date information
-- **Library Structure**: Each vendored library is located at
-  `vendor/{crate-name}/` with full source code
-- **Documentation Access**: Read `vendor/{crate-name}/README.md`,
-  `vendor/{crate-name}/src/lib.rs`, and relevant module files
-- **Example Discovery**: Look for examples in `vendor/{crate-name}/examples/`
-  or `vendor/{crate-name}/tests/` directories
-- **API Understanding**: Study `vendor/{crate-name}/src/` for implementation
-  details and usage patterns
-- **Version Verification**: Check `vendor/{crate-name}/Cargo.toml` to confirm
-  the exact version being used
+- **Primary Source**: Read dependency source code downloaded by Cargo for the
+  most accurate and up-to-date information
+- **Library Structure**: Each crate is located under `~/.cargo/registry/src/`
+  after download with full source code
+- **Documentation Access**: Inspect `README.md`, `src/lib.rs`, and relevant
+  module files of each dependency
+- **Example Discovery**: Look for `examples/` or `tests/` directories within the
+  crate source
+- **API Understanding**: Study the `src/` modules for implementation details
+  and usage patterns
+- **Version Verification**: Check the crate's `Cargo.toml` to confirm the exact
+  version being used
 
 **Usage Pattern**: Before implementing features using external libraries,
 agents should:
 
-1. Read `vendor/{library}/src/lib.rs` for main API overview
-2. Check `vendor/{library}/examples/` for usage examples
-3. Review `vendor/{library}/src/` modules for specific functionality needed
+1. Read `<crate>/src/lib.rs` for main API overview
+2. Check `<crate>/examples/` for usage examples
+3. Review `<crate>/src/` modules for specific functionality needed
 4. Understand error types and patterns from source code
-5. Verify feature flags and configuration options from
-   `vendor/{library}/Cargo.toml`
+5. Verify feature flags and configuration options from `<crate>/Cargo.toml`
 
 ### Logging & Observability
 
@@ -335,13 +330,10 @@ agents should:
 
 ## Critical Development Rules & Constraints
 
-### Mandatory Practices
+-### Mandatory Practices
 
-- **Offline-Only Operations**: This project uses vendored dependencies - never
-  use online Cargo commands
-- **Alias Enforcement**: Always use offline aliases (`cargo build-offline`,
-  `cargo test-offline`, etc.)
-- **Immediate Compilation Checks**: Run `cargo check-offline` after every code
+- **Alias Enforcement**: Always use the provided Cargo aliases
+- **Immediate Compilation Checks**: Run `cargo check-short` after every code
   change
 - **Functional Programming Preference**: Prioritize iterator chains and
   combinators over imperative loops

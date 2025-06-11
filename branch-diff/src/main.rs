@@ -1,11 +1,14 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
+use gix::Repository;
 use gix::bstr::ByteSlice;
-use gix::diff::blob::{unified_diff::{ContextSize, NewlineSeparator}, UnifiedDiff};
+use gix::diff::blob::{
+    UnifiedDiff,
+    unified_diff::{ContextSize, NewlineSeparator},
+};
+use gix::hash::ObjectId;
 use gix::object::tree::diff::{Change, ChangeDetached};
 use gix::prelude::*;
-use gix::hash::ObjectId;
-use gix::Repository;
 
 /// Show file changes in a branch relative to a base branch.
 #[derive(Parser, Debug)]
@@ -84,8 +87,7 @@ fn show_summary(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result
     let lhs_tree = lhs_commit.tree()?;
     let rhs_tree = rhs_commit.tree()?;
 
-    let changes: Vec<ChangeDetached> =
-        repo.diff_tree_to_tree(Some(&lhs_tree), Some(&rhs_tree), None)?;
+    let changes: Vec<ChangeDetached> = repo.diff_tree_to_tree(Some(&lhs_tree), Some(&rhs_tree), None)?;
 
     for change in changes {
         let change = change.attach(repo, repo);
@@ -99,18 +101,17 @@ fn show_summary(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result
             Change::Modification { location, .. } => {
                 println!("M\t{}", location.to_str_lossy());
             }
-            Change::Rewrite { location, source_location, .. } => {
-                println!(
-                    "R\t{} -> {}",
-                    source_location.to_str_lossy(),
-                    location.to_str_lossy()
-                );
+            Change::Rewrite {
+                location,
+                source_location,
+                ..
+            } => {
+                println!("R\t{} -> {}", source_location.to_str_lossy(), location.to_str_lossy());
             }
         }
     }
     Ok(())
 }
-
 
 fn show_patch(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result<()> {
     let lhs_commit = repo.find_commit(lhs_id)?;
@@ -119,8 +120,7 @@ fn show_patch(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result<(
     let lhs_tree = lhs_commit.tree()?;
     let rhs_tree = rhs_commit.tree()?;
 
-    let changes: Vec<ChangeDetached> =
-        repo.diff_tree_to_tree(Some(&lhs_tree), Some(&rhs_tree), None)?;
+    let changes: Vec<ChangeDetached> = repo.diff_tree_to_tree(Some(&lhs_tree), Some(&rhs_tree), None)?;
 
     let mut cache = repo.diff_resource_cache_for_tree_diff()?;
 
@@ -131,13 +131,14 @@ fn show_patch(repo: &Repository, lhs_id: ObjectId, rhs_id: ObjectId) -> Result<(
     Ok(())
 }
 
-fn print_patch(
-    cache: &mut gix::diff::blob::Platform,
-    change: Change<'_, '_ , '_>,
-) -> Result<()> {
+fn print_patch(cache: &mut gix::diff::blob::Platform, change: Change<'_, '_, '_>) -> Result<()> {
     use gix::diff::blob::platform::prepare_diff::Operation;
     let (old_path, new_path) = match &change {
-        Change::Rewrite { source_location, location, .. } => (source_location.as_bstr(), location.as_bstr()),
+        Change::Rewrite {
+            source_location,
+            location,
+            ..
+        } => (source_location.as_bstr(), location.as_bstr()),
         Change::Addition { location, .. }
         | Change::Deletion { location, .. }
         | Change::Modification { location, .. } => (location.as_bstr(), location.as_bstr()),
