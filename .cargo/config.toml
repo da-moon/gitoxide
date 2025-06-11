@@ -1,12 +1,6 @@
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source.vendored-sources]
-directory = "vendor"
-
 [alias]
-build-offline = "build --offline --message-format short"
-check-offline = "check --offline --message-format short"
-test-offline = "test --offline --message-format short"
-run-offline = "run --offline"
-clippy-offline = "clippy --offline --message-format short"
+build-short = "build --message-format short"
+check-short = "check --message-format short"
+test-short = "test --message-format short"
+run-short = "run"
+clippy-short = "clippy --message-format short"

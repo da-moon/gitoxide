@@ -286,6 +286,17 @@ Once installed, there are two binaries:
 * **gix**
   * low level commands, _plumbing_, for use in more specialized cases and to validate newly written code in real-world scenarios
 
+### Running Utilities
+
+The project contains small utilities showcasing `gix` APIs in their own crates.
+For instance, preview merging another branch without affecting the repository:
+
+```bash
+cargo run --package merge-preview -- <branch>
+```
+
+Omit `<branch>` to merge the current branch's upstream (`@{u}`).
+
 ## Project Goals
 
 Project goals can change over time as we learn more, and they can be challenged.
