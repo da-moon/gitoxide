@@ -1,0 +1,20 @@
+[package]
+name = "git-productivity-analyzer"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# Dependencies
+[dependencies]
+clap = { version = "4.5.3", features = ["derive"] }
+miette = { version = "7.6.0", features = ["fancy"] }
+thiserror = "2.0.0"
+tokio = { version = "1.44.2", features = ["rt-multi-thread", "macros"] }
+anyhow = "1.0"
+# Path relative to workspace root
+gitoxide-core = { path = "../gitoxide-core", features = ["estimate-hours"] }
+gix = { path = "../gix", default-features = false, features = ["progress-tree"] }
+
+[package.metadata]
+# For workspace though
+
