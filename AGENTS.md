@@ -1,21 +1,8 @@
 # AGENTS.md
 
-### Mandatory Cargo Aliases Usage
-
-This project uses pre-configured Cargo aliases to provide concise output.
-**ALWAYS use these aliases - never use standard cargo commands:**
-
-- `cargo build-short` - Build the project with short message format
-- `cargo check-short` - Check the project with short message format
-- `cargo test-short` - Execute tests with structured output
-- `cargo run-short` - Run applications with proper environment
-- `cargo clippy-short` - Run clippy with short message format
-
 ### Critical Build Rules
 
-- **NEVER** use `cargo build`, `cargo test`, or `cargo run` directly
-- **ALWAYS** use the provided Cargo aliases
-- **IMMEDIATELY** run `cargo check-short` and `cargo fmt` after any code
+- **IMMEDIATELY** run `cargo check --message-format short` and `cargo fmt` after any code
   change to ensure it compiles
 - **MANDATORY** validation sequence before any commit (see Validation Commands
   section)
@@ -27,7 +14,7 @@ This project uses pre-configured Cargo aliases to provide concise output.
 #### Incremental Development Methodology
 
 - **Atomic Changes**: Make small, focused changes with single responsibility
-- **Immediate Verification**: Run `cargo check-short` after every
+- **Immediate Verification**: Run `cargo check --message-format short` after every
   modification
 - **Compilation-First**: Ensure code compiles before adding new functionality
 - **Test-Driven Validation**: Write tests before implementing complex logic
@@ -198,10 +185,19 @@ specified order:
 
 ```bash
 # 1. Compilation verification
-cargo build-short
+cargo build --message-format short -p <crate>
 
-# 2. Test suite execution
-cargo test-short
+# 2. Cargo checks
+cargo check --message-format short -p <crate>
+
+# 3. Test suite execution
+cargo test --message-format short -p <crate>
+
+# 4. Clippy linting
+cargo clippy --message-format short -p <crate>
+
+# 5. Basic help output
+cargo run -p <crate> -- --help ""
 ```
 
 ### End-to-End Validation Scripts
@@ -225,7 +221,7 @@ as needed for comprehensive validation.
 
 1. **Atomic Changes**: Make small, focused code modifications with single
    responsibility
-2. **Immediate Verification**: Run `cargo check-short` after each change for
+2. **Immediate Verification**: Run `cargo check --message-format short` after each change for
    fast feedback
 3. **Compilation Verification**: Ensure code compiles successfully before
    proceeding
@@ -332,8 +328,7 @@ agents should:
 
 -### Mandatory Practices
 
-- **Alias Enforcement**: Always use the provided Cargo aliases
-- **Immediate Compilation Checks**: Run `cargo check-short` after every code
+- **Immediate Compilation Checks**: Run `cargo check --message-format short` after every code
   change
 - **Functional Programming Preference**: Prioritize iterator chains and
   combinators over imperative loops
