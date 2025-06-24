@@ -14,9 +14,17 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--show-pii` - show personally identifiable information
   - `--omit-unify-identities` - don't deduplicate identities
   - `--threads <n>` - number of threads to use
+- `commit-frequency` — count commits per day and week and report active days per author.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+  - `--author <pattern>` - filter commits by author
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
 ## Time Estimation Algorithm
 
 The implementation is based on `gitoxide-core::hours::estimate_hours()` which groups commits by author and time. Commits spaced less than two hours apart are considered part of the same working session. Each session starts with an initial two hour bonus to cover context switching. Optionally the diff of each commit can be examined to track files and lines changed. Identities are unified via `.mailmap` and GitHub bots can be ignored.
+
+## Commit Frequency & Developer Engagement
+
+Commit frequency helps gauge how busy contributors are and how engaged they remain over time. Regular commits across many days indicate an active developer whereas sparse contributions may show less involvement. Weekly totals can highlight periods of intense activity or lulls.
