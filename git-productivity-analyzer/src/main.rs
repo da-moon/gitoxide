@@ -2,10 +2,12 @@ use clap::Parser;
 
 mod cmd;
 mod error;
+mod sdk;
 
 use crate::error::Result;
 
 /// Shared options available to all subcommands.
+#[derive(Clone)]
 pub struct Globals {
     pub since: Option<String>,
     pub until: Option<String>,
@@ -15,14 +17,11 @@ pub struct Globals {
 #[derive(Debug, Parser)]
 #[command(name = "git-productivity-analyzer")]
 struct Cli {
-    /// Start date for analysis (inclusive)
-    #[arg(long)]
+    #[arg(long, help = "Start date for analysis (inclusive)")]
     since: Option<String>,
-    /// End date for analysis (inclusive)
-    #[arg(long)]
+    #[arg(long, help = "End date for analysis (inclusive)")]
     until: Option<String>,
-    /// Produce JSON output
-    #[arg(long)]
+    #[arg(long, help = "Produce JSON output")]
     json: bool,
     #[command(subcommand)]
     command: cmd::Command,
@@ -39,5 +38,6 @@ async fn main() -> Result<()> {
     let globals = Globals { since, until, json };
     match command {
         cmd::Command::Hours(args) => cmd::hours::run(args, &globals).await,
+        cmd::Command::CommitFrequency(args) => cmd::commit_frequency::run(args, &globals).await,
     }
 }
