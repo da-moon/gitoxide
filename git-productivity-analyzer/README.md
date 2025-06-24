@@ -6,6 +6,14 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
 ## Subcommands
 
 - `hours` — estimate the total hours spent on the project.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+  - `--no-bots` - ignore commits by GitHub bots
+  - `--file-stats` - collect file statistics
+  - `--line-stats` - collect line statistics
+  - `--show-pii` - show personally identifiable information
+  - `--omit-unify-identities` - don't deduplicate identities
+  - `--threads <n>` - number of threads to use
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
