@@ -3,6 +3,7 @@ use clap::Parser;
 mod cmd;
 mod error;
 mod sdk;
+mod util;
 
 use crate::error::Result;
 
