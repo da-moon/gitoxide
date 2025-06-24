@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{cmd::commit_frequency::Args, error::Result, Globals};
+use crate::{Globals, cmd::commit_frequency::Args, error::Result};
 use gix::bstr::ByteSlice;
 use gix::prelude::*;
 use miette::IntoDiagnostic;
@@ -34,11 +34,7 @@ pub fn analyze(args: Args, globals: &Globals) -> Result<()> {
     Ok(())
 }
 
-fn resolve_start_commit<'repo>(
-    repo: &'repo gix::Repository,
-    rev_spec: &str,
-    globals: &Globals,
-) -> Result<gix::ObjectId> {
+fn resolve_start_commit(repo: &gix::Repository, rev_spec: &str, globals: &Globals) -> Result<gix::ObjectId> {
     let spec = globals.until.as_deref().unwrap_or(rev_spec);
     Ok(repo
         .rev_parse_single(spec.as_bytes().as_bstr())
@@ -46,7 +42,7 @@ fn resolve_start_commit<'repo>(
         .detach())
 }
 
-fn resolve_since_commit<'repo>(repo: &'repo gix::Repository, since: &Option<String>) -> Result<Option<gix::ObjectId>> {
+fn resolve_since_commit(repo: &gix::Repository, since: &Option<String>) -> Result<Option<gix::ObjectId>> {
     match since {
         Some(spec) => Ok(Some(
             repo.rev_parse_single(spec.as_bytes().as_bstr())
@@ -57,8 +53,8 @@ fn resolve_since_commit<'repo>(repo: &'repo gix::Repository, since: &Option<Stri
     }
 }
 
-fn walk_commits<'repo>(
-    repo: &'repo gix::Repository,
+fn walk_commits(
+    repo: &gix::Repository,
     start: gix::ObjectId,
     since: Option<&gix::ObjectId>,
     author_filter: &Option<String>,
@@ -92,10 +88,7 @@ fn output_results(
             commits_per_week,
             active_days_per_author: days_by_author.into_iter().map(|(k, v)| (k, v.len() as u32)).collect(),
         };
-        let _ = serde_json::to_writer(std::io::stdout(), &totals).and_then(|_| {
-            println!();
-            Ok(())
-        });
+        let _ = serde_json::to_writer(std::io::stdout(), &totals).map(|_| println!());
     } else {
         for (day, count) in &commits_per_day {
             println!("{day}: {count}");
