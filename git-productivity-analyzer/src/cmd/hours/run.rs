@@ -1,13 +1,9 @@
 use super::args::Args;
 use crate::error::Result;
 use crate::Globals;
-use miette::IntoDiagnostic;
-use tokio::task;
 
 pub async fn run(args: Args, globals: &Globals) -> Result<()> {
-    let globals = globals.clone();
-    task::spawn_blocking(move || crate::sdk::hours::analyze(args, &globals))
-        .await
-        .into_diagnostic()??;
+    let g = globals.clone();
+    crate::util::spawn_blocking(move || crate::sdk::hours::analyze(args, &g)).await?;
     Ok(())
 }

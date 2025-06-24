@@ -1,4 +1,4 @@
-use chrono::Datelike;
+use chrono::{naive::IsoWeek, Datelike, NaiveDate};
 use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
 use std::collections::{BTreeMap, BTreeSet};
@@ -8,9 +8,9 @@ use crate::error::Result;
 pub(crate) fn process_commit(
     commit: gix::objs::CommitRefIter<'_>,
     author_filter: &Option<String>,
-    days: &mut BTreeMap<String, u32>,
-    weeks: &mut BTreeMap<String, u32>,
-    by_author: &mut BTreeMap<String, BTreeSet<String>>,
+    days: &mut BTreeMap<NaiveDate, u32>,
+    weeks: &mut BTreeMap<IsoWeek, u32>,
+    by_author: &mut BTreeMap<String, BTreeSet<NaiveDate>>,
 ) -> Result<()> {
     let author = commit.author().into_diagnostic()?;
     let author_string = format!("{} <{}>", author.name, author.email);
@@ -24,11 +24,9 @@ pub(crate) fn process_commit(
     let date = chrono::DateTime::<chrono::Utc>::from_timestamp(ts, 0)
         .ok_or_else(|| miette::miette!("invalid timestamp {ts}"))?
         .date_naive();
-    let day = date.to_string();
-    *days.entry(day.clone()).or_insert(0) += 1;
-    let iso_week = date.iso_week();
-    let week = format!("{}-{:02}", iso_week.year(), iso_week.week());
+    *days.entry(date).or_insert(0) += 1;
+    let week = date.iso_week();
     *weeks.entry(week).or_insert(0) += 1;
-    by_author.entry(author_string).or_default().insert(day);
+    by_author.entry(author_string).or_default().insert(date);
     Ok(())
 }
