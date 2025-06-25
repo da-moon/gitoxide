@@ -8,6 +8,9 @@ target/
 /tests/fixtures/repos
 $/tests/fixtures/repos/
 
+# ignore generated snapshot outputs
+tests/snapshots/
+
 /tests/fixtures/commit-graphs/
 $/tests/fixtures/commit-graphs/
 
