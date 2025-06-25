@@ -80,9 +80,14 @@ impl Analyzer {
         } else {
             let bins = hist.counts.len() as u32;
             for (i, count) in hist.counts.iter().enumerate() {
-                let start = i as u32 * 24 / bins;
-                let end = (i as u32 + 1) * 24 / bins;
-                println!("{:02}-{:02}: {count}", start, end - 1);
+                let start = ((i as u32) * 24).div_ceil(bins);
+                let mut end = ((i as u32 + 1) * 24).div_ceil(bins).saturating_sub(1);
+                let start = start.min(23);
+                end = end.min(23);
+                if end < start {
+                    end = start;
+                }
+                println!("{:02}-{:02}: {count}", start, end);
             }
         }
     }
