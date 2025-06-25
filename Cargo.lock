@@ -431,6 +431,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "branch-client"
+version = "0.1.0"
+dependencies = [
+ "assert_cmd",
+ "clap",
+ "gix",
+ "miette",
+ "tempfile",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "branch-diff"
 version = "0.1.0"
 dependencies = [

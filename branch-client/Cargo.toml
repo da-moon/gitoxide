@@ -1,0 +1,18 @@
+[package]
+name = "branch-client"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+clap = { version = "4.5.3", features = ["derive"] }
+miette = { version = "7.6.0", features = ["fancy"] }
+thiserror = "2.0.0"
+gix = { path = "../gix", default-features = false, features = ["revision"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+tempfile = "3"
+
+[lints]
+workspace = true

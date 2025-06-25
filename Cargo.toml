@@ -288,6 +288,7 @@ members = [
     "gix-shallow",
     "branch-diff",
     "branch-info",
+    "branch-client",
     "merge-preview",
     "git-productivity-analyzer",
 ]
