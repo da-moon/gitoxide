@@ -108,11 +108,8 @@ impl Analyzer {
 
 fn percentile_of_sorted(values: &[u32], pct: f64) -> u32 {
     assert!(!values.is_empty());
-    if values.len() == 1 {
-        return values[0];
-    }
     assert!((0.0..=100.0).contains(&pct));
-    if (pct - 100.0).abs() < f64::EPSILON {
+    if (pct - 100.0).abs() < f64::EPSILON || values.len() == 1 {
         return values.last().copied().unwrap_or_default();
     }
     let length = (values.len() - 1) as f64;

@@ -18,6 +18,13 @@ pub struct CommonArgs {
     pub rev_spec: String,
 }
 
+/// Implements `From<$args>` for `$opts` when all fields (except `repo`) share the same
+/// name in both types.
+///
+/// # Limitation
+/// This macro assumes that the provided `$field`s exist with the same identifier
+/// in both the source and destination types. If field names differ or custom
+/// conversion logic is needed, implement `From` manually.
 #[macro_export]
 macro_rules! impl_from_args {
     ($args:ty, $opts:ty { $($field:ident),* }) => {
