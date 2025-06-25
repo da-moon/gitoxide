@@ -1,6 +1,6 @@
 use super::args::Args;
 use crate::error::Result;
-use crate::sdk::time_of_day::{Analyzer, Options};
+use crate::sdk::time_of_day::Options;
 use crate::Globals;
 
 pub async fn run(args: Args, globals: &Globals) -> Result<()> {
@@ -10,9 +10,9 @@ pub async fn run(args: Args, globals: &Globals) -> Result<()> {
         bins: args.bins,
         author: args.author,
     };
-    let run_opts = opts.clone();
-    let g = globals.clone();
-    let hist = crate::util::spawn_blocking(move || run_opts.into_analyzer(g).analyze()).await?;
-    opts.into_analyzer(globals.clone()).print_histogram(&hist);
+    let analyzer = opts.into_analyzer(globals.clone());
+    let worker = analyzer.clone();
+    let hist = crate::util::spawn_blocking(move || worker.analyze()).await?;
+    analyzer.print_histogram(&hist);
     Ok(())
 }

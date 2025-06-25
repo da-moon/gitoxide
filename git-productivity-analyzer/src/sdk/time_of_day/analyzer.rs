@@ -1,5 +1,4 @@
 use crate::{error::Result, Globals};
-use gix::bstr::ByteSlice;
 use gix::prelude::*;
 use miette::IntoDiagnostic;
 use std::path::PathBuf;
@@ -24,6 +23,7 @@ impl Options {
     }
 }
 
+#[derive(Clone)]
 pub struct Analyzer {
     opts: Options,
     globals: Globals,
@@ -35,9 +35,13 @@ impl Analyzer {
     }
 
     pub fn analyze(self) -> Result<Histogram> {
+        if self.opts.bins == 0 {
+            return Err(miette::miette!("--bins must be greater than 0"));
+        }
+
         let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
-        let start = self.resolve_start_commit(&repo)?;
-        let since = self.resolve_since_commit(&repo)?;
+        let start = crate::sdk::resolve_start_commit(&repo, &self.opts.rev_spec, self.globals.until.as_deref())?;
+        let since = crate::sdk::resolve_since_commit(&repo, self.globals.since.as_deref())?;
 
         let mut bins = vec![0u32; self.opts.bins as usize];
         self.walk_commits(&repo, start, since.as_ref(), &mut bins)?;
@@ -45,24 +49,7 @@ impl Analyzer {
         Ok(Histogram { counts: bins })
     }
 
-    fn resolve_start_commit(&self, repo: &gix::Repository) -> Result<gix::ObjectId> {
-        let spec = self.globals.until.as_deref().unwrap_or(&self.opts.rev_spec);
-        Ok(repo
-            .rev_parse_single(spec.as_bytes().as_bstr())
-            .into_diagnostic()?
-            .detach())
-    }
-
-    fn resolve_since_commit(&self, repo: &gix::Repository) -> Result<Option<gix::ObjectId>> {
-        match &self.globals.since {
-            Some(spec) => Ok(Some(
-                repo.rev_parse_single(spec.as_bytes().as_bstr())
-                    .into_diagnostic()?
-                    .detach(),
-            )),
-            None => Ok(None),
-        }
-    }
+    // commit range resolution is provided by sdk::revision
 
     fn walk_commits(
         &self,
@@ -91,10 +78,10 @@ impl Analyzer {
             let ser = SerializableHistogram::from(hist);
             let _ = serde_json::to_writer(std::io::stdout(), &ser).map(|_| println!());
         } else {
-            let bin_size = 24.0 / hist.counts.len() as f32;
+            let bins = hist.counts.len() as u32;
             for (i, count) in hist.counts.iter().enumerate() {
-                let start = (i as f32 * bin_size).round() as u32;
-                let end = ((i + 1) as f32 * bin_size).round() as u32;
+                let start = i as u32 * 24 / bins;
+                let end = (i as u32 + 1) * 24 / bins;
                 println!("{:02}-{:02}: {count}", start, end - 1);
             }
         }

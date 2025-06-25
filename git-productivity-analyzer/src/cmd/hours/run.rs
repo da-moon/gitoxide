@@ -1,6 +1,6 @@
 use super::args::Args;
 use crate::error::Result;
-use crate::sdk::hours::{Analyzer, Options};
+use crate::sdk::hours::Options;
 use crate::Globals;
 
 pub async fn run(args: Args, globals: &Globals) -> Result<()> {

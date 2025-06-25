@@ -1,4 +1,4 @@
-mod analyzer;
+pub mod analyzer;
 mod processor;
 
-pub use analyzer::{Analyzer, Options, Totals};
+pub use analyzer::Options;

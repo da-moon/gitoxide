@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{error::Result, Globals};
 use chrono::{naive::IsoWeek, NaiveDate};
-use gix::bstr::ByteSlice;
 use gix::prelude::*;
 use miette::IntoDiagnostic;
 use std::path::PathBuf;
@@ -28,6 +27,7 @@ impl Options {
     }
 }
 
+#[derive(Clone)]
 pub struct Analyzer {
     opts: Options,
     globals: Globals,
@@ -39,8 +39,8 @@ impl Analyzer {
     }
     pub fn analyze(self) -> Result<Totals> {
         let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
-        let start = self.resolve_start_commit(&repo)?;
-        let since = self.resolve_since_commit(&repo)?;
+        let start = crate::sdk::resolve_start_commit(&repo, &self.opts.rev_spec, self.globals.until.as_deref())?;
+        let since = crate::sdk::resolve_since_commit(&repo, self.globals.since.as_deref())?;
 
         let (mut daily, mut weekly, mut days_by_author) = (
             BTreeMap::<NaiveDate, u32>::new(),
@@ -61,25 +61,6 @@ impl Analyzer {
             commits_per_week: weekly,
             active_days_per_author: days_by_author,
         })
-    }
-
-    fn resolve_start_commit(&self, repo: &gix::Repository) -> Result<gix::ObjectId> {
-        let spec = self.globals.until.as_deref().unwrap_or(&self.opts.rev_spec);
-        Ok(repo
-            .rev_parse_single(spec.as_bytes().as_bstr())
-            .into_diagnostic()?
-            .detach())
-    }
-
-    fn resolve_since_commit(&self, repo: &gix::Repository) -> Result<Option<gix::ObjectId>> {
-        match &self.globals.since {
-            Some(spec) => Ok(Some(
-                repo.rev_parse_single(spec.as_bytes().as_bstr())
-                    .into_diagnostic()?
-                    .detach(),
-            )),
-            None => Ok(None),
-        }
     }
 
     fn walk_commits(
