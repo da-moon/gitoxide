@@ -75,9 +75,11 @@ impl Analyzer {
         crate::sdk::print_json_or(self.globals.json, &SerializableHistogram::from(hist), || {
             let bins = hist.counts().len() as u32;
             for (i, count) in hist.counts().iter().enumerate() {
-                // Divide 24 hours into `bins` contiguous ranges
-                let start = (i as u32 * 24) / bins;
-                let mut end = ((i as u32 + 1) * 24) / bins - 1;
+                // Compute bin boundaries so that bin assignment matches the processor.
+                // The processor places hour `h` into `h * bins / 24`, so here we invert
+                // that mapping using integer arithmetic only.
+                let start = (i as u32 * 24).div_ceil(bins);
+                let mut end = ((i as u32 + 1) * 24).div_ceil(bins) - 1;
                 if i as u32 == bins - 1 {
                     end = 23;
                 }
