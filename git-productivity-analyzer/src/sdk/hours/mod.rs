@@ -1,4 +1,4 @@
 mod analyzer;
 mod parser;
 
-pub use analyzer::analyze;
+pub use analyzer::{Analyzer, Options};

@@ -1,4 +1,4 @@
 mod analyzer;
 mod processor;
 
-pub use analyzer::{analyze, print_totals};
+pub use analyzer::{Analyzer, Options, Totals};

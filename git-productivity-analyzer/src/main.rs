@@ -40,5 +40,6 @@ async fn main() -> Result<()> {
     match command {
         cmd::Command::Hours(args) => cmd::hours::run(args, &globals).await,
         cmd::Command::CommitFrequency(args) => cmd::commit_frequency::run(args, &globals).await,
+        cmd::Command::TimeOfDay(args) => cmd::time_of_day::run(args, &globals).await,
     }
 }
