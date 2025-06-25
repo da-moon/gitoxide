@@ -21,7 +21,7 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
 - `time-of-day` — show a histogram of commit times across a 24h day.
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
-  - `--bins <n>` - number of bins for the histogram
+  - `--bins <n>` - number of bins for the histogram (1-24)
   - `--author <pattern>` - filter commits by author
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
