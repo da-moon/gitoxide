@@ -44,11 +44,6 @@ where
 #[macro_export]
 macro_rules! impl_analyzer_boilerplate {
     ($opts:path, $analyzer:path) => {
-        impl $opts {
-            pub fn into_analyzer(self, globals: $crate::Globals) -> $analyzer {
-                <$analyzer>::new(self, globals)
-            }
-        }
         impl $crate::sdk::IntoAnalyzer for $opts {
             type Analyzer = $analyzer;
             fn into_analyzer(self, globals: $crate::Globals) -> Self::Analyzer {

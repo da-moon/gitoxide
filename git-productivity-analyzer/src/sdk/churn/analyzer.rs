@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use super::diff_utils::{compute_diff_lines, configure_changes, create_changes};
 use crate::{error::Result, Globals};
+use bytecount::count;
 use gix::{
     bstr::{BStr, ByteSlice},
     prelude::*,
@@ -51,8 +52,19 @@ impl Analyzer {
     }
 
     fn count_lines(id: gix::Id<'_>) -> u32 {
+        fn count_lines_in_bytes(data: &[u8]) -> u32 {
+            if data.is_empty() {
+                return 0;
+            }
+            let mut count = count(data, b'\n') as u32;
+            if *data.last().unwrap() != b'\n' {
+                count += 1;
+            }
+            count
+        }
+
         id.object()
-            .map(|blob| blob.data.as_slice().lines_with_terminator().count() as u32)
+            .map(|blob| count_lines_in_bytes(blob.data.as_slice()))
             .unwrap_or(0)
     }
 
