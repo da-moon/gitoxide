@@ -1,3 +1,4 @@
+pub mod churn;
 pub mod commit_frequency;
 mod helpers;
 pub mod hours;
