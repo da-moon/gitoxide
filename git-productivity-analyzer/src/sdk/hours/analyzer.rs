@@ -3,11 +3,10 @@ use gitoxide_core::hours::{estimate, Context};
 use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
 use serde::Serialize;
-use std::io::Write;
 use std::path::PathBuf;
 
 #[derive(Serialize, Default)]
-pub(crate) struct Summary {
+pub struct Summary {
     pub(crate) total_hours: f32,
     pub(crate) total_8h_days: f32,
     pub(crate) total_commits: u32,
@@ -37,7 +36,7 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn analyze(self) -> Result<()> {
+    pub fn analyze(self) -> Result<(Summary, String)> {
         let mut out_buf = Vec::new();
         let spec = self.globals.until.as_deref().unwrap_or(&self.opts.rev_spec);
         estimate(
@@ -56,22 +55,23 @@ impl Analyzer {
         )
         .map_err(|e| miette::Report::msg(e.to_string()))?;
 
-        if self.globals.json {
-            let out_str = std::str::from_utf8(&out_buf).into_diagnostic()?;
-            let summary = super::parser::parse_summary(out_str);
-            serde_json::to_writer(std::io::stdout(), &summary).into_diagnostic()?;
-            println!();
-        } else {
-            std::io::stdout().write_all(&out_buf).into_diagnostic()?;
-        }
-        Ok(())
+        let out_str = std::str::from_utf8(&out_buf).into_diagnostic()?;
+        let summary = super::parser::parse_summary(out_str);
+        Ok((summary, out_str.to_owned()))
+    }
+
+    pub fn print_summary(&self, summary: &Summary, text: &str) {
+        crate::sdk::print_json_or(self.globals.json, summary, || {
+            // Print the raw output from `estimate` which may include PII
+            print!("{}", text);
+        });
     }
 }
 
 crate::impl_analyzer_boilerplate!(Options, Analyzer);
 
 impl crate::sdk::AnalyzerTrait for Analyzer {
-    type Output = ();
+    type Output = (Summary, String);
     fn analyze(self) -> crate::error::Result<Self::Output> {
         Analyzer::analyze(self)
     }

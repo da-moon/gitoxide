@@ -5,8 +5,16 @@ use std::path::PathBuf;
 
 use super::processor::process_commit;
 
+/// A histogram of commit counts grouped into time-of-day buckets.
 pub struct Histogram {
-    pub counts: Vec<u32>,
+    counts: Vec<u32>,
+}
+
+impl Histogram {
+    /// Returns the number of commits per bin.
+    pub fn counts(&self) -> &[u32] {
+        &self.counts
+    }
 }
 
 #[derive(Clone)]
@@ -25,8 +33,8 @@ pub struct Analyzer {
 
 impl Analyzer {
     pub fn analyze(self) -> Result<Histogram> {
-        if self.opts.bins == 0 {
-            return Err(miette::miette!("--bins must be greater than 0"));
+        if self.opts.bins == 0 || self.opts.bins > 24 {
+            return Err(miette::miette!("--bins must be in 1..=24"));
         }
 
         let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
@@ -65,14 +73,13 @@ impl Analyzer {
 
     pub fn print_histogram(&self, hist: &Histogram) {
         crate::sdk::print_json_or(self.globals.json, &SerializableHistogram::from(hist), || {
-            let bins = hist.counts.len() as u32;
-            for (i, count) in hist.counts.iter().enumerate() {
-                let start = ((i as u32) * 24).div_ceil(bins);
-                let mut end = ((i as u32 + 1) * 24).div_ceil(bins).saturating_sub(1);
-                let start = start.min(23);
-                end = end.min(23);
-                if end < start {
-                    end = start;
+            let bins = hist.counts().len() as u32;
+            for (i, count) in hist.counts().iter().enumerate() {
+                // Divide 24 hours into `bins` contiguous ranges
+                let start = (i as u32 * 24) / bins;
+                let mut end = ((i as u32 + 1) * 24) / bins - 1;
+                if i as u32 == bins - 1 {
+                    end = 23;
                 }
                 println!("{:02}-{:02}: {count}", start, end);
             }
