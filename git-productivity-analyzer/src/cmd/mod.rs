@@ -1,3 +1,4 @@
+pub mod churn;
 pub mod commit_frequency;
 pub mod hours;
 pub mod time_of_day;
@@ -12,4 +13,6 @@ pub enum Command {
     CommitFrequency(commit_frequency::Args),
     #[command(about = "Histogram of commit times across the day")]
     TimeOfDay(time_of_day::Args),
+    #[command(about = "Summarize lines added and removed")]
+    Churn(churn::Args),
 }
