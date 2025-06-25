@@ -21,12 +21,6 @@ pub struct Options {
     pub author: Option<String>,
 }
 
-impl Options {
-    pub fn into_analyzer(self, globals: Globals) -> Analyzer {
-        Analyzer::new(self, globals)
-    }
-}
-
 #[derive(Clone)]
 pub struct Analyzer {
     opts: Options,
@@ -34,9 +28,6 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn new(opts: Options, globals: Globals) -> Self {
-        Self { opts, globals }
-    }
     pub fn analyze(self) -> Result<Totals> {
         let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
         let start = crate::sdk::resolve_start_commit(&repo, &self.opts.rev_spec, self.globals.until.as_deref())?;
@@ -88,10 +79,7 @@ impl Analyzer {
     }
 
     pub fn print_totals(&self, totals: &Totals) {
-        if self.globals.json {
-            let ser = SerializableTotals::from(totals);
-            let _ = serde_json::to_writer(std::io::stdout(), &ser).map(|_| println!());
-        } else {
+        crate::sdk::print_json_or(self.globals.json, &SerializableTotals::from(totals), || {
             for (day, count) in &totals.commits_per_day {
                 println!("{}: {count}", day);
             }
@@ -101,7 +89,7 @@ impl Analyzer {
             for (author, days) in &totals.active_days_per_author {
                 println!("{author} active days: {}", days.len());
             }
-        }
+        });
     }
 }
 
@@ -127,5 +115,14 @@ impl From<&Totals> for SerializableTotals {
                 .map(|(a, set)| (a.clone(), set.len() as u32))
                 .collect(),
         }
+    }
+}
+
+crate::impl_analyzer_boilerplate!(Options, Analyzer);
+
+impl crate::sdk::AnalyzerTrait for Analyzer {
+    type Output = Totals;
+    fn analyze(self) -> crate::error::Result<Self::Output> {
+        Analyzer::analyze(self)
     }
 }

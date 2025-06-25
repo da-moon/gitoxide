@@ -17,12 +17,6 @@ pub struct Options {
     pub author: Option<String>,
 }
 
-impl Options {
-    pub fn into_analyzer(self, globals: Globals) -> Analyzer {
-        Analyzer::new(self, globals)
-    }
-}
-
 #[derive(Clone)]
 pub struct Analyzer {
     opts: Options,
@@ -30,10 +24,6 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn new(opts: Options, globals: Globals) -> Self {
-        Self { opts, globals }
-    }
-
     pub fn analyze(self) -> Result<Histogram> {
         if self.opts.bins == 0 {
             return Err(miette::miette!("--bins must be greater than 0"));
@@ -74,10 +64,7 @@ impl Analyzer {
     }
 
     pub fn print_histogram(&self, hist: &Histogram) {
-        if self.globals.json {
-            let ser = SerializableHistogram::from(hist);
-            let _ = serde_json::to_writer(std::io::stdout(), &ser).map(|_| println!());
-        } else {
+        crate::sdk::print_json_or(self.globals.json, &SerializableHistogram::from(hist), || {
             let bins = hist.counts.len() as u32;
             for (i, count) in hist.counts.iter().enumerate() {
                 let start = ((i as u32) * 24).div_ceil(bins);
@@ -89,7 +76,7 @@ impl Analyzer {
                 }
                 println!("{:02}-{:02}: {count}", start, end);
             }
-        }
+        });
     }
 }
 
@@ -101,5 +88,14 @@ struct SerializableHistogram {
 impl From<&Histogram> for SerializableHistogram {
     fn from(h: &Histogram) -> Self {
         Self { bins: h.counts.clone() }
+    }
+}
+
+crate::impl_analyzer_boilerplate!(Options, Analyzer);
+
+impl crate::sdk::AnalyzerTrait for Analyzer {
+    type Output = Histogram;
+    fn analyze(self) -> crate::error::Result<Self::Output> {
+        Analyzer::analyze(self)
     }
 }

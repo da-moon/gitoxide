@@ -30,22 +30,13 @@ pub struct Options {
     pub threads: Option<usize>,
 }
 
-impl Options {
-    pub fn into_analyzer(self, globals: crate::Globals) -> Analyzer {
-        Analyzer::new(self, globals)
-    }
-}
-
+#[derive(Clone)]
 pub struct Analyzer {
     opts: Options,
     globals: crate::Globals,
 }
 
 impl Analyzer {
-    pub fn new(opts: Options, globals: crate::Globals) -> Self {
-        Self { opts, globals }
-    }
-
     pub fn analyze(self) -> Result<()> {
         let mut out_buf = Vec::new();
         let spec = self.globals.until.as_deref().unwrap_or(&self.opts.rev_spec);
@@ -74,5 +65,14 @@ impl Analyzer {
             std::io::stdout().write_all(&out_buf).into_diagnostic()?;
         }
         Ok(())
+    }
+}
+
+crate::impl_analyzer_boilerplate!(Options, Analyzer);
+
+impl crate::sdk::AnalyzerTrait for Analyzer {
+    type Output = ();
+    fn analyze(self) -> crate::error::Result<Self::Output> {
+        Analyzer::analyze(self)
     }
 }

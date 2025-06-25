@@ -20,3 +20,13 @@ pub struct Args {
     #[arg(long, help = "Only count commits whose author matches this pattern.")]
     pub author: Option<String>,
 }
+
+impl From<Args> for crate::sdk::commit_frequency::Options {
+    fn from(a: Args) -> Self {
+        Self {
+            working_dir: a.working_dir,
+            rev_spec: a.rev_spec,
+            author: a.author,
+        }
+    }
+}
