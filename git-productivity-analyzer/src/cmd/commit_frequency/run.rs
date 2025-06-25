@@ -1,6 +1,6 @@
 use super::args::Args;
 use crate::error::Result;
-use crate::sdk::commit_frequency::{Analyzer, Options};
+use crate::sdk::commit_frequency::Options;
 use crate::Globals;
 
 pub async fn run(args: Args, globals: &Globals) -> Result<()> {
@@ -9,9 +9,9 @@ pub async fn run(args: Args, globals: &Globals) -> Result<()> {
         rev_spec: args.rev_spec,
         author: args.author,
     };
-    let run_opts = opts.clone();
-    let g = globals.clone();
-    let totals = crate::util::spawn_blocking(move || run_opts.into_analyzer(g).analyze()).await?;
-    opts.into_analyzer(globals.clone()).print_totals(&totals);
+    let analyzer = opts.into_analyzer(globals.clone());
+    let worker = analyzer.clone();
+    let totals = crate::util::spawn_blocking(move || worker.analyze()).await?;
+    analyzer.print_totals(&totals);
     Ok(())
 }
