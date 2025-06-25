@@ -5,6 +5,7 @@
 //! consistent error type.
 
 use miette::IntoDiagnostic;
+use gix::bstr::ByteSlice;
 
 use crate::error::Result;
 
@@ -32,9 +33,14 @@ pub fn list_branches(repo: &gix::Repository, remote: bool) -> Result<Vec<String>
 
 /// Create a new branch `name` starting from revision `start`.
 pub fn create_branch(repo: &gix::Repository, name: &str, start: &str) -> Result<()> {
+    // Validate the branch name before attempting creation to provide a clear error.
+    gix::validate::reference::name_partial(name.as_bytes().as_bstr())
+        .into_diagnostic()?;
+
     // `rev_parse_single` resolves the provided revision string (like "HEAD" or a
     // commit hash) to an object id.
     let id = repo.rev_parse_single(start).into_diagnostic()?;
+
     // Create `refs/heads/<name>` pointing to that id. `PreviousValue::MustNotExist`
     // ensures the reference did not already exist.
     repo.reference(
@@ -49,8 +55,19 @@ pub fn create_branch(repo: &gix::Repository, name: &str, start: &str) -> Result<
 
 /// Remove the branch `name` from `refs/heads/`.
 pub fn delete_branch(repo: &gix::Repository, name: &str) -> Result<()> {
+    let full = format!("refs/heads/{name}");
+    // Prevent deleting the branch that HEAD currently points to.
+    if repo
+        .head_name()
+        .into_diagnostic()?
+        .map(|head| head.as_bstr() == full.as_bytes().as_bstr())
+        .unwrap_or(false)
+    {
+        miette::bail!("cannot delete the currently checked-out branch");
+    }
+
     // Look up the reference and delete it in one call.
-    let r = repo.find_reference(&format!("refs/heads/{name}")).into_diagnostic()?;
+    let r = repo.find_reference(&full).into_diagnostic()?;
     r.delete().into_diagnostic()?;
     Ok(())
 }
