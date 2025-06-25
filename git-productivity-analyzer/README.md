@@ -23,6 +23,11 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--rev-spec` - revision to analyze
   - `--bins <n>` - number of bins for the histogram (1-24)
   - `--author <pattern>` - filter commits by author
+- `churn` — summarize lines added and removed over time.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+  - `--per-file` - show totals per file path
+  - `--author <pattern>` - filter commits by author
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
@@ -34,3 +39,9 @@ The implementation is based on `gitoxide-core::hours::estimate_hours()` which gr
 
 Commit frequency helps gauge how busy contributors are and how engaged they remain over time. Regular commits across many days indicate an active developer whereas sparse contributions may show less involvement. Weekly totals can highlight periods of intense activity or lulls.
 Analyzing the commit time of day reveals when individuals typically work, helping to infer personal or team schedules and preferred collaboration windows.
+
+## Code Churn & Refactoring Insight
+
+Churn measures how many lines are added and removed within a period. Frequent churn
+can signal ongoing refactoring efforts, hotspots that change often, or general
+development activity across the repository.
