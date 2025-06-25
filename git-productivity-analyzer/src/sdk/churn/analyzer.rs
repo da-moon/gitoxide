@@ -1,13 +1,10 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
+use super::diff_utils::commit_trees;
 use super::diff_utils::{compute_diff_lines, configure_changes, create_changes};
 use crate::{error::Result, Globals};
 use bytecount::count;
-use gix::{
-    bstr::{BStr, ByteSlice},
-    prelude::*,
-};
+use gix::bstr::{BStr, ByteSlice};
 use miette::IntoDiagnostic;
 use serde::Serialize;
 
@@ -24,8 +21,7 @@ pub struct Summary {
 
 #[derive(Clone)]
 pub struct Options {
-    pub working_dir: PathBuf,
-    pub rev_spec: String,
+    pub repo: crate::sdk::RepoOptions,
     pub per_file: bool,
     pub author: Option<String>,
 }
@@ -57,7 +53,7 @@ impl Analyzer {
                 return 0;
             }
             let mut count = count(data, b'\n') as u32;
-            if *data.last().unwrap() != b'\n' {
+            if data.last() != Some(&b'\n') {
                 count += 1;
             }
             count
@@ -69,49 +65,20 @@ impl Analyzer {
     }
 
     pub fn analyze(self) -> Result<Summary> {
-        let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
-        let start = crate::sdk::resolve_start_commit(&repo, &self.opts.rev_spec, self.globals.until.as_deref())?;
-        let since = crate::sdk::resolve_since_commit(&repo, self.globals.since.as_deref())?;
+        let (repo, start, since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
         let mut totals = BTreeMap::<String, Counts>::new();
-        self.walk_commits(&repo, start, since.as_ref(), &mut totals)?;
-        Ok(Summary { totals })
-    }
-
-    fn walk_commits(
-        &self,
-        repo: &gix::Repository,
-        start: gix::ObjectId,
-        since: Option<&gix::ObjectId>,
-        totals: &mut BTreeMap<String, Counts>,
-    ) -> Result<()> {
-        let mut buf = Vec::new();
         let mut cache = repo
             .diff_resource_cache(gix::diff::blob::pipeline::Mode::ToGit, Default::default())
             .map_err(|e| miette::Report::msg(e.to_string()))?;
-        for item in start.ancestors(&repo.objects) {
-            let info = item.into_diagnostic()?;
-            let commit = repo.objects.find_commit_iter(&info.id, &mut buf).into_diagnostic()?;
+        crate::sdk::walk_commits(&repo, start, since.as_ref(), |id, commit| {
             let author = commit.author().into_diagnostic()?;
-            if let Some(pattern) = &self.opts.author {
-                let pat = pattern.as_str();
-                if !author.name.to_str_lossy().contains(pat) && !author.email.to_str_lossy().contains(pat) {
-                    if let Some(id) = since {
-                        if &info.id == id {
-                            break;
-                        }
-                    }
-                    continue;
-                }
+            if !crate::sdk::author_matches(&author, &self.opts.author) {
+                return Ok(());
             }
             let author_string = format!("{} <{}>", author.name, author.email);
-            self.process_commit(repo, &mut cache, info.id, &commit, &author_string, totals)?;
-            if let Some(id) = since {
-                if &info.id == id {
-                    break;
-                }
-            }
-        }
-        Ok(())
+            self.process_commit(&repo, &mut cache, id, &commit, &author_string, &mut totals)
+        })?;
+        Ok(Summary { totals })
     }
 
     fn process_commit(
@@ -119,11 +86,12 @@ impl Analyzer {
         repo: &gix::Repository,
         cache: &mut gix::diff::blob::Platform,
         commit_id: gix::ObjectId,
-        commit: &gix::objs::CommitRefIter<'_>,
+        commit: &gix::Commit<'_>,
         author: &str,
         totals: &mut BTreeMap<String, Counts>,
     ) -> Result<()> {
-        let (from, to) = self.trees(repo, commit_id, commit.parent_ids().next());
+        let parent = commit.parent_ids().next().map(|id| id.detach());
+        let (from, to) = commit_trees(repo, commit_id, parent);
         let mut diff = create_changes(&from)?;
         configure_changes(&mut diff);
         self.process_changes(&mut diff, &to, author, totals, cache)
@@ -144,24 +112,6 @@ impl Analyzer {
             })
             .map_err(|e| miette::Report::msg(e.to_string()))?;
         Ok(())
-    }
-
-    fn trees<'repo>(
-        &self,
-        repo: &'repo gix::Repository,
-        commit_id: gix::ObjectId,
-        parent: Option<gix::ObjectId>,
-    ) -> (gix::Tree<'repo>, gix::Tree<'repo>) {
-        let to = repo
-            .find_object(commit_id)
-            .ok()
-            .and_then(|o| o.peel_to_tree().ok())
-            .unwrap_or_else(|| repo.empty_tree());
-        let from = parent
-            .and_then(|id| repo.find_object(id).ok())
-            .and_then(|c| c.peel_to_tree().ok())
-            .unwrap_or_else(|| repo.empty_tree());
-        (from, to)
     }
 
     fn apply_change(

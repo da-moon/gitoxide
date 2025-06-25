@@ -1,21 +1,10 @@
+use crate::cmd::common::CommonArgs;
 use clap::Args as ClapArgs;
-use std::path::PathBuf;
 
 #[derive(Debug, ClapArgs)]
 pub struct Args {
-    #[arg(
-        long = "working-dir",
-        default_value = ".",
-        help = "The directory containing a '.git/' folder."
-    )]
-    pub working_dir: PathBuf,
-
-    #[arg(
-        long = "rev-spec",
-        default_value = "HEAD",
-        help = "The name of the revision as spec at which to start iterating the commit graph."
-    )]
-    pub rev_spec: String,
+    #[command(flatten)]
+    pub common: CommonArgs,
 
     #[arg(
         long = "no-bots",
@@ -60,17 +49,14 @@ pub struct Args {
     pub threads: Option<usize>,
 }
 
-impl From<Args> for crate::sdk::hours::Options {
-    fn from(a: Args) -> Self {
-        Self {
-            working_dir: a.working_dir,
-            rev_spec: a.rev_spec,
-            no_bots: a.no_bots,
-            file_stats: a.file_stats,
-            line_stats: a.line_stats,
-            show_pii: a.show_pii,
-            omit_unify_identities: a.omit_unify_identities,
-            threads: a.threads,
-        }
+crate::impl_from_args!(
+    Args,
+    crate::sdk::hours::Options {
+        no_bots,
+        file_stats,
+        line_stats,
+        show_pii,
+        omit_unify_identities,
+        threads
     }
-}
+);

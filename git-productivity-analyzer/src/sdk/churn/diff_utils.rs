@@ -40,3 +40,20 @@ pub fn compute_diff_lines(
         None
     }
 }
+
+pub fn commit_trees<'repo>(
+    repo: &'repo gix::Repository,
+    commit_id: gix::ObjectId,
+    parent: Option<gix::ObjectId>,
+) -> (gix::Tree<'repo>, gix::Tree<'repo>) {
+    let to = repo
+        .find_object(commit_id)
+        .ok()
+        .and_then(|o| o.peel_to_tree().ok())
+        .unwrap_or_else(|| repo.empty_tree());
+    let from = parent
+        .and_then(|id| repo.find_object(id).ok())
+        .and_then(|c| c.peel_to_tree().ok())
+        .unwrap_or_else(|| repo.empty_tree());
+    (from, to)
+}

@@ -1,5 +1,7 @@
 pub mod churn;
 pub mod commit_frequency;
+pub mod commit_size;
+pub mod common;
 pub mod hours;
 pub mod time_of_day;
 
@@ -15,4 +17,6 @@ pub enum Command {
     TimeOfDay(time_of_day::Args),
     #[command(about = "Summarize lines added and removed")]
     Churn(churn::Args),
+    #[command(about = "Analyze distribution of commit sizes")]
+    CommitSize(commit_size::Args),
 }

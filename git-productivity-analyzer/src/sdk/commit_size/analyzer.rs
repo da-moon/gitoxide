@@ -1,0 +1,133 @@
+use crate::sdk::churn::{commit_trees, configure_changes, create_changes};
+use crate::{error::Result, Globals};
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct Summary {
+    pub min_files: u32,
+    pub max_files: u32,
+    pub avg_files: f64,
+    pub min_lines: u32,
+    pub max_lines: u32,
+    pub avg_lines: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_percentiles: Option<Vec<(f64, u32)>>,
+}
+
+#[derive(Clone)]
+pub struct Options {
+    pub repo: crate::sdk::RepoOptions,
+    pub percentiles: Option<Vec<f64>>,
+}
+
+#[derive(Clone)]
+pub struct Analyzer {
+    opts: Options,
+    globals: Globals,
+}
+
+crate::impl_analyzer_boilerplate!(Options, Analyzer);
+
+impl Analyzer {
+    pub fn analyze(self) -> Result<Summary> {
+        let (repo, start, since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
+        let mut lines = Vec::new();
+        let mut files = Vec::new();
+        crate::sdk::walk_commits(&repo, start, since.as_ref(), |id, commit| {
+            self.process_commit(&repo, id, &commit, &mut lines, &mut files)
+        })?;
+        Ok(self.build_summary(lines, files))
+    }
+
+    fn process_commit(
+        &self,
+        repo: &gix::Repository,
+        commit_id: gix::ObjectId,
+        commit: &gix::Commit<'_>,
+        lines: &mut Vec<u32>,
+        files: &mut Vec<u32>,
+    ) -> Result<()> {
+        let parent = commit.parent_ids().next().map(|id| id.detach());
+        let (from, to) = commit_trees(repo, commit_id, parent);
+        let mut diff = create_changes(&from)?;
+        configure_changes(&mut diff);
+        let stats = diff.stats(&to).map_err(|e| miette::Report::msg(e.to_string()))?;
+        files.push(stats.files_changed as u32);
+        lines.push((stats.lines_added + stats.lines_removed) as u32);
+        Ok(())
+    }
+
+    fn build_summary(&self, mut lines: Vec<u32>, files: Vec<u32>) -> Summary {
+        let min_files = files.iter().copied().min().unwrap_or(0);
+        let max_files = files.iter().copied().max().unwrap_or(0);
+        let avg_files = if files.is_empty() {
+            0.0
+        } else {
+            files.iter().copied().map(f64::from).sum::<f64>() / files.len() as f64
+        };
+        let min_lines = lines.iter().copied().min().unwrap_or(0);
+        let max_lines = lines.iter().copied().max().unwrap_or(0);
+        let avg_lines = if lines.is_empty() {
+            0.0
+        } else {
+            lines.iter().copied().map(f64::from).sum::<f64>() / lines.len() as f64
+        };
+        let line_percentiles = self.opts.percentiles.as_ref().map(|pcts| {
+            lines.sort_unstable();
+            pcts.iter().map(|p| (*p, percentile_of_sorted(&lines, *p))).collect()
+        });
+        Summary {
+            min_files,
+            max_files,
+            avg_files,
+            min_lines,
+            max_lines,
+            avg_lines,
+            line_percentiles,
+        }
+    }
+
+    pub fn print_summary(&self, summary: &Summary) {
+        crate::sdk::print_json_or(self.globals.json, summary, || {
+            println!(
+                "files per commit: min={} max={} avg={:.2}",
+                summary.min_files, summary.max_files, summary.avg_files
+            );
+            println!(
+                "lines per commit: min={} max={} avg={:.2}",
+                summary.min_lines, summary.max_lines, summary.avg_lines
+            );
+            if let Some(pcts) = &summary.line_percentiles {
+                for (p, value) in pcts {
+                    println!("p{} = {}", p, value);
+                }
+            }
+        });
+    }
+}
+
+fn percentile_of_sorted(values: &[u32], pct: f64) -> u32 {
+    assert!(!values.is_empty());
+    if values.len() == 1 {
+        return values[0];
+    }
+    assert!((0.0..=100.0).contains(&pct));
+    if (pct - 100.0).abs() < f64::EPSILON {
+        return values.last().copied().unwrap_or_default();
+    }
+    let length = (values.len() - 1) as f64;
+    let rank = (pct / 100.0) * length;
+    let lower = rank.floor();
+    let d = rank - lower;
+    let n = lower as usize;
+    let lo = values[n] as f64;
+    let hi = values[n + 1] as f64;
+    (lo + (hi - lo) * d).round() as u32
+}
+
+impl crate::sdk::AnalyzerTrait for Analyzer {
+    type Output = Summary;
+    fn analyze(self) -> crate::error::Result<Self::Output> {
+        Analyzer::analyze(self)
+    }
+}

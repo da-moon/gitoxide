@@ -3,7 +3,6 @@ use gitoxide_core::hours::{estimate, Context};
 use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
 use serde::Serialize;
-use std::path::PathBuf;
 
 #[derive(Serialize, Default)]
 pub struct Summary {
@@ -19,8 +18,7 @@ pub struct Summary {
 
 #[derive(Clone)]
 pub struct Options {
-    pub working_dir: PathBuf,
-    pub rev_spec: String,
+    pub repo: crate::sdk::RepoOptions,
     pub no_bots: bool,
     pub file_stats: bool,
     pub line_stats: bool,
@@ -38,9 +36,10 @@ pub struct Analyzer {
 impl Analyzer {
     pub fn analyze(self) -> Result<(Summary, String)> {
         let mut out_buf = Vec::new();
-        let spec = self.globals.until.as_deref().unwrap_or(&self.opts.rev_spec);
+        let (_repo, _start, _since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
+        let spec = self.globals.until.as_deref().unwrap_or(&self.opts.repo.rev_spec);
         estimate(
-            &self.opts.working_dir,
+            &self.opts.repo.working_dir,
             spec.as_bytes().as_bstr(),
             &mut gix::progress::Discard,
             Context {
