@@ -1,12 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::processor::process_commit;
 use crate::{error::Result, Globals};
 use chrono::{naive::IsoWeek, NaiveDate};
-use gix::prelude::*;
-use miette::IntoDiagnostic;
-use std::path::PathBuf;
-
-use super::processor::process_commit;
 
 pub struct Totals {
     pub commits_per_day: BTreeMap<NaiveDate, u32>,
@@ -16,8 +12,7 @@ pub struct Totals {
 
 #[derive(Clone)]
 pub struct Options {
-    pub working_dir: PathBuf,
-    pub rev_spec: String,
+    pub repo: crate::sdk::RepoOptions,
     pub author: Option<String>,
 }
 
@@ -29,9 +24,7 @@ pub struct Analyzer {
 
 impl Analyzer {
     pub fn analyze(self) -> Result<Totals> {
-        let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
-        let start = crate::sdk::resolve_start_commit(&repo, &self.opts.rev_spec, self.globals.until.as_deref())?;
-        let since = crate::sdk::resolve_since_commit(&repo, self.globals.since.as_deref())?;
+        let (repo, start, since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
 
         let (mut daily, mut weekly, mut days_by_author) = (
             BTreeMap::<NaiveDate, u32>::new(),
@@ -63,19 +56,9 @@ impl Analyzer {
         weeks: &mut BTreeMap<IsoWeek, u32>,
         by_author: &mut BTreeMap<String, BTreeSet<NaiveDate>>,
     ) -> Result<()> {
-        let iter = start.ancestors(&repo.objects);
-        let mut buf = Vec::new();
-        for item in iter {
-            let info = item.into_diagnostic()?;
-            let commit = repo.objects.find_commit_iter(&info.id, &mut buf).into_diagnostic()?;
-            process_commit(commit, &self.opts.author, days, weeks, by_author)?;
-            if let Some(id) = since {
-                if &info.id == id {
-                    break;
-                }
-            }
-        }
-        Ok(())
+        crate::sdk::walk_commits(repo, start, since, |_, commit| {
+            process_commit(commit, &self.opts.author, days, weeks, by_author)
+        })
     }
 
     pub fn print_totals(&self, totals: &Totals) {

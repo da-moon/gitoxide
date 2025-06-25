@@ -1,12 +1,11 @@
 use chrono::{naive::IsoWeek, Datelike, NaiveDate};
-use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::error::Result;
 
 pub(crate) fn process_commit(
-    commit: gix::objs::CommitRefIter<'_>,
+    commit: gix::Commit<'_>,
     author_filter: &Option<String>,
     days: &mut BTreeMap<NaiveDate, u32>,
     weeks: &mut BTreeMap<IsoWeek, u32>,
@@ -14,11 +13,8 @@ pub(crate) fn process_commit(
 ) -> Result<()> {
     let author = commit.author().into_diagnostic()?;
     let author_string = format!("{} <{}>", author.name, author.email);
-    if let Some(pattern) = author_filter {
-        let pat = pattern.as_str();
-        if !author.name.to_str_lossy().contains(pat) && !author.email.to_str_lossy().contains(pat) {
-            return Ok(());
-        }
+    if !crate::sdk::author_matches(&author, author_filter) {
+        return Ok(());
     }
     let ts = author.seconds();
     let date = chrono::DateTime::<chrono::Utc>::from_timestamp(ts, 0)

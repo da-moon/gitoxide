@@ -1,7 +1,4 @@
 use crate::{error::Result, Globals};
-use gix::prelude::*;
-use miette::IntoDiagnostic;
-use std::path::PathBuf;
 
 use super::processor::process_commit;
 
@@ -19,8 +16,7 @@ impl Histogram {
 
 #[derive(Clone)]
 pub struct Options {
-    pub working_dir: PathBuf,
-    pub rev_spec: String,
+    pub repo: crate::sdk::RepoOptions,
     pub bins: u8,
     pub author: Option<String>,
 }
@@ -37,9 +33,7 @@ impl Analyzer {
             return Err(miette::miette!("--bins must be in 1..=24"));
         }
 
-        let repo = gix::discover(&self.opts.working_dir).into_diagnostic()?;
-        let start = crate::sdk::resolve_start_commit(&repo, &self.opts.rev_spec, self.globals.until.as_deref())?;
-        let since = crate::sdk::resolve_since_commit(&repo, self.globals.since.as_deref())?;
+        let (repo, start, since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
 
         let mut bins = vec![0u32; self.opts.bins as usize];
         self.walk_commits(&repo, start, since.as_ref(), &mut bins)?;
@@ -56,19 +50,9 @@ impl Analyzer {
         since: Option<&gix::ObjectId>,
         bins: &mut [u32],
     ) -> Result<()> {
-        let iter = start.ancestors(&repo.objects);
-        let mut buf = Vec::new();
-        for item in iter {
-            let info = item.into_diagnostic()?;
-            let commit = repo.objects.find_commit_iter(&info.id, &mut buf).into_diagnostic()?;
-            process_commit(commit, &self.opts.author, bins)?;
-            if let Some(id) = since {
-                if &info.id == id {
-                    break;
-                }
-            }
-        }
-        Ok(())
+        crate::sdk::walk_commits(repo, start, since, |_, commit| {
+            process_commit(commit, &self.opts.author, bins)
+        })
     }
 
     pub fn print_histogram(&self, hist: &Histogram) {

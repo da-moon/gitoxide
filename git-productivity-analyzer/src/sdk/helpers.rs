@@ -1,4 +1,5 @@
 use crate::{error::Result, util::spawn_blocking, Globals};
+use gix::bstr::ByteSlice;
 use serde::Serialize;
 
 /// Print either JSON or human-readable output based on the [`json`] flag.
@@ -56,4 +57,14 @@ macro_rules! impl_analyzer_boilerplate {
             }
         }
     };
+}
+
+pub fn author_matches(author: &gix::actor::SignatureRef<'_>, filter: &Option<String>) -> bool {
+    match filter {
+        Some(pattern) => {
+            let pat = pattern.as_str();
+            author.name.to_str_lossy().contains(pat) || author.email.to_str_lossy().contains(pat)
+        }
+        None => true,
+    }
 }

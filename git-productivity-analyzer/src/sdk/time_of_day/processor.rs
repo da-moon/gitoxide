@@ -1,20 +1,12 @@
 use chrono::{FixedOffset, Timelike, Utc};
-use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
 
 use crate::error::Result;
 
-pub(crate) fn process_commit(
-    commit: gix::objs::CommitRefIter<'_>,
-    author_filter: &Option<String>,
-    bins: &mut [u32],
-) -> Result<()> {
+pub(crate) fn process_commit(commit: gix::Commit<'_>, author_filter: &Option<String>, bins: &mut [u32]) -> Result<()> {
     let author = commit.author().into_diagnostic()?;
-    if let Some(pattern) = author_filter {
-        let pat = pattern.as_str();
-        if !author.name.to_str_lossy().contains(pat) && !author.email.to_str_lossy().contains(pat) {
-            return Ok(());
-        }
+    if !crate::sdk::author_matches(&author, author_filter) {
+        return Ok(());
     }
     let time = author.time().into_diagnostic()?;
     let secs = time.seconds;

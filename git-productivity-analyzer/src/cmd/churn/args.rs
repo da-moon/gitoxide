@@ -1,21 +1,10 @@
+use crate::cmd::common::CommonArgs;
 use clap::Args as ClapArgs;
-use std::path::PathBuf;
 
 #[derive(Debug, ClapArgs)]
 pub struct Args {
-    #[arg(
-        long = "working-dir",
-        default_value = ".",
-        help = "The directory containing a '.git/' folder."
-    )]
-    pub working_dir: PathBuf,
-
-    #[arg(
-        long = "rev-spec",
-        default_value = "HEAD",
-        help = "The revision to start walking from."
-    )]
-    pub rev_spec: String,
+    #[command(flatten)]
+    pub common: CommonArgs,
 
     #[arg(long, help = "Show totals per file path instead of per author.")]
     pub per_file: bool,
@@ -24,13 +13,4 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-impl From<Args> for crate::sdk::churn::Options {
-    fn from(a: Args) -> Self {
-        Self {
-            working_dir: a.working_dir,
-            rev_spec: a.rev_spec,
-            per_file: a.per_file,
-            author: a.author,
-        }
-    }
-}
+crate::impl_from_args!(Args, crate::sdk::churn::Options { per_file, author });

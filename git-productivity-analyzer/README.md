@@ -28,6 +28,10 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--rev-spec` - revision to analyze
   - `--per-file` - show totals per file path
   - `--author <pattern>` - filter commits by author
+- `commit-size` — summarize how many files and lines change per commit.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+  - `--percentiles <list>` - show additional percentiles for commit size
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
@@ -45,3 +49,10 @@ Analyzing the commit time of day reveals when individuals typically work, helpin
 Churn measures how many lines are added and removed within a period. Frequent churn
 can signal ongoing refactoring efforts, hotspots that change often, or general
 development activity across the repository.
+
+## Commit Size & Review Effort
+
+Large commits are harder to review and carry a higher risk of introducing
+problems. Keeping commit sizes small makes code reviews faster and helps isolate
+issues. The `commit-size` command summarizes how much code changes per commit so
+you can gauge the typical review burden and spot unusually large commits.
