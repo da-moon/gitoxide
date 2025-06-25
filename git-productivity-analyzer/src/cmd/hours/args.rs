@@ -59,3 +59,18 @@ pub struct Args {
     )]
     pub threads: Option<usize>,
 }
+
+impl From<Args> for crate::sdk::hours::Options {
+    fn from(a: Args) -> Self {
+        Self {
+            working_dir: a.working_dir,
+            rev_spec: a.rev_spec,
+            no_bots: a.no_bots,
+            file_stats: a.file_stats,
+            line_stats: a.line_stats,
+            show_pii: a.show_pii,
+            omit_unify_identities: a.omit_unify_identities,
+            threads: a.threads,
+        }
+    }
+}
