@@ -34,6 +34,11 @@ fn to_path_list(list: &[(PathBuf, f64)]) -> PathList {
 }
 
 impl Analyzer {
+    /// Helper dispatch to reduce duplication when printing JSON or plain output.
+    fn print_serializable<T: Serialize>(&self, value: &T, plain: impl FnOnce()) {
+        crate::sdk::print_json_or(self.globals.json, value, plain);
+    }
+
     /// Print the computed scores either as text table or JSON.
     pub fn print_scores(&self, scores: &[(PathBuf, f64)]) {
         let print_plain = || {
@@ -49,9 +54,9 @@ impl Analyzer {
         };
 
         if self.opts.path_only {
-            crate::sdk::print_json_or(self.globals.json, &to_path_list(scores), print_plain);
+            self.print_serializable(&to_path_list(scores), print_plain);
         } else {
-            crate::sdk::print_json_or(self.globals.json, &to_path_scores(scores), print_plain);
+            self.print_serializable(&to_path_scores(scores), print_plain);
         }
     }
 }
