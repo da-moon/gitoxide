@@ -5,4 +5,4 @@
 
 pub mod analyzer;
 
-pub use analyzer::Options;
+pub use analyzer::{Options, Order};

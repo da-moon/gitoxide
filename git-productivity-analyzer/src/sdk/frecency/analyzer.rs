@@ -5,6 +5,7 @@
 //! in recent commits therefore score highest.
 
 use crate::{error::Result, Globals};
+use clap::ValueEnum;
 use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
 use serde::Serialize;
@@ -12,6 +13,22 @@ use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
 };
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+/// Sort order used when printing frecency scores.
+pub enum Order {
+    /// Sort from lowest score to highest.
+    Ascending,
+    /// Sort from highest score to lowest.
+    Descending,
+}
+
+/// Seconds in one day used for age calculations.
+const SECONDS_PER_DAY: f64 = 86_400.0;
+/// Exponent applied to the age weight for quadratic decay.
+const AGE_EXPONENT: i32 = 2;
+/// Reference size in bytes for the size penalty computation.
+const SIZE_PENALTY_REF: f64 = 1024.0;
 
 #[derive(Clone)]
 /// Parameters controlling repository traversal and output formatting.
@@ -22,10 +39,8 @@ pub struct Options {
     pub paths: Option<HashSet<PathBuf>>,
     /// Stop after visiting at most this many commits.
     pub max_commits: Option<usize>,
-    /// Sort results ascending when `true` (descending is the default).
-    pub ascending: bool,
-    /// Sort results descending when `true`.
-    pub descending: bool,
+    /// Sort results according to this order.
+    pub order: Order,
     /// If set, only print file paths without their scores.
     pub path_only: bool,
 }
@@ -45,7 +60,11 @@ impl Analyzer {
     /// Analyze the repository and return each file with its frecency score.
     pub fn analyze(self) -> Result<Vec<(PathBuf, f64)>> {
         // Open the repository and resolve the commit range specified via global flags.
-        let (repo, start, since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
+        // If no commits exist yet, return an empty result instead of an error.
+        let (repo, start, since) = match crate::sdk::open_with_range(&self.opts.repo, &self.globals) {
+            Ok(v) => v,
+            Err(_) => return Ok(Vec::new()),
+        };
 
         // Use the current time to weight commits based on their age.
         let now = Self::current_timestamp();
@@ -90,8 +109,8 @@ impl Analyzer {
         // Convert map into a sortable vector.
         let mut out: Vec<_> = scores.into_iter().collect();
 
-        // Default sort order is descending unless `--ascending` is used.
-        let desc = self.opts.descending || !self.opts.ascending;
+        // Determine desired ordering once before sorting.
+        let desc = matches!(self.opts.order, Order::Descending);
         out.sort_by(|a, b| {
             let ord = a.1.total_cmp(&b.1);
             if desc {
@@ -138,13 +157,13 @@ impl Analyzer {
     /// Compute the age-based weight for a commit.
     fn age_weight(&self, commit: &gix::Commit<'_>, now: i64) -> Result<f64> {
         // Calculate time difference in days between the commit and now.
-        let mut age_days = (now - commit.time().into_diagnostic()?.seconds) as f64 / 86_400.0;
+        let mut age_days = (now - commit.time().into_diagnostic()?.seconds) as f64 / SECONDS_PER_DAY;
         if age_days < 0.0 {
             age_days = 0.0;
         }
 
         // Younger commits should dominate the score, hence a squared decay.
-        Ok(1.0 / (age_days + 1.0).powi(2))
+        Ok(1.0 / (age_days + 1.0).powi(AGE_EXPONENT))
     }
 
     /// Iterate over all changes of a commit and update scores.
@@ -200,8 +219,8 @@ impl Analyzer {
             return None;
         }
 
-        // Determine blob size for the penalty term. Missing objects default to zero.
-        let size = id.object().map(|b| b.data.len() as u64).unwrap_or(0);
+        // Determine blob size for the penalty term without loading the entire blob.
+        let size = id.try_header().ok().flatten().map(|h| h.size()).unwrap_or(0);
         Some((path, size))
     }
 
@@ -221,7 +240,7 @@ impl Analyzer {
 
     /// Return the penalty for a blob of the given size.
     fn size_penalty(size: u64) -> f64 {
-        1.0 / (1.0 + ((size as f64) / 1024.0).sqrt())
+        1.0 / (1.0 + ((size as f64) / SIZE_PENALTY_REF).sqrt())
     }
 
     /// Print the computed scores either as text table or JSON.

@@ -37,7 +37,7 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--rev-spec` - revision to analyze
   - `--paths <path>...` - only consider these paths
   - `--max-commits <n>` - limit the number of commits scanned
-  - `--ascending`/`--descending` - sort results
+  - `--order <ascending|descending>` - sort results
   - `--path-only` - print only file paths
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
