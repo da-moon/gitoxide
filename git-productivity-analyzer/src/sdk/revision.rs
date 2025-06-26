@@ -21,6 +21,10 @@ pub fn resolve_since_commit(repo: &gix::Repository, since: Option<&str>) -> Resu
     }
 }
 
+/// Walk commits starting at `start` until `since` is reached.
+///
+/// The commit identified by `since`, if provided, is **included** in the
+/// iteration before stopping.
 pub fn walk_commits<'repo, F>(
     repo: &'repo gix::Repository,
     start: gix::ObjectId,

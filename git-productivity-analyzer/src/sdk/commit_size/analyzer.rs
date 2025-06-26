@@ -1,5 +1,6 @@
 use crate::sdk::diff::{commit_trees, configure_changes, create_changes};
 use crate::{error::Result, Globals};
+use miette::IntoDiagnostic;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -62,7 +63,7 @@ impl Analyzer {
         let (from, to) = commit_trees(repo, commit_id, parent);
         let mut diff = create_changes(&from)?;
         configure_changes(&mut diff);
-        let stats = diff.stats(&to).map_err(|e| miette::Report::msg(e.to_string()))?;
+        let stats = diff.stats(&to).into_diagnostic()?;
         files.push(stats.files_changed as u32);
         lines.push((stats.lines_added + stats.lines_removed) as u32);
         Ok(())
