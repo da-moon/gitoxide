@@ -83,10 +83,16 @@ impl Analyzer {
         } else {
             lines.iter().copied().map(f64::from).sum::<f64>() / lines.len() as f64
         };
-        let line_percentiles = self.opts.percentiles.as_ref().map(|pcts| {
-            lines.sort_unstable();
-            pcts.iter().map(|p| (*p, percentile_of_sorted(&lines, *p))).collect()
-        });
+        let line_percentiles = if lines.is_empty() {
+            None
+        } else {
+            self.opts.percentiles.as_ref().map(|pcts| {
+                lines.sort_unstable();
+                pcts.iter()
+                    .map(|p| (*p, percentile_of_sorted(&lines, *p).unwrap_or_default()))
+                    .collect()
+            })
+        };
         Summary {
             min_files,
             max_files,
@@ -117,11 +123,13 @@ impl Analyzer {
     }
 }
 
-fn percentile_of_sorted(values: &[u32], pct: f64) -> u32 {
-    assert!(!values.is_empty());
+fn percentile_of_sorted(values: &[u32], pct: f64) -> Option<u32> {
+    if values.is_empty() {
+        return None;
+    }
     assert!((0.0..=100.0).contains(&pct));
     if (pct - 100.0).abs() < f64::EPSILON || values.len() == 1 {
-        return values.last().copied().unwrap_or_default();
+        return Some(values.last().copied().unwrap_or_default());
     }
     let length = (values.len() - 1) as f64;
     let rank = (pct / 100.0) * length;
@@ -130,7 +138,7 @@ fn percentile_of_sorted(values: &[u32], pct: f64) -> u32 {
     let n = lower as usize;
     let lo = values[n] as f64;
     let hi = values[n + 1] as f64;
-    (lo + (hi - lo) * d).round() as u32
+    Some((lo + (hi - lo) * d).round() as u32)
 }
 
 impl crate::sdk::AnalyzerTrait for Analyzer {

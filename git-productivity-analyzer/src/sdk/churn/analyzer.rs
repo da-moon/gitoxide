@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
-use super::diff_utils::compute_diff_lines;
-use crate::sdk::diff::{commit_trees, configure_changes, create_changes};
+use crate::sdk::diff::{commit_trees, compute_diff_lines, configure_changes, create_changes};
 use crate::{error::Result, Globals};
 use bytecount::count;
 use gix::bstr::{BStr, ByteSlice};

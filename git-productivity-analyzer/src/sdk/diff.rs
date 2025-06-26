@@ -31,3 +31,30 @@ pub fn commit_trees<'repo>(
         .unwrap_or_else(|| repo.empty_tree());
     (from, to)
 }
+
+/// Compute added and removed line counts between two blobs.
+pub fn compute_diff_lines(
+    prev_mode: gix::object::tree::EntryMode,
+    new_mode: gix::object::tree::EntryMode,
+    prev_id: gix::Id<'_>,
+    new_id: gix::Id<'_>,
+    location: &gix::bstr::BStr,
+    cache: &mut gix::diff::blob::Platform,
+) -> Option<(u32, u32)> {
+    use gix::object::tree::diff::Change;
+    let change = Change::Modification {
+        entry_mode: new_mode,
+        previous_entry_mode: prev_mode,
+        id: new_id,
+        previous_id: prev_id,
+        location,
+    };
+    if let Ok(mut diff) = change.diff(cache) {
+        diff.line_counts()
+            .ok()
+            .flatten()
+            .map(|counts| (counts.insertions, counts.removals))
+    } else {
+        None
+    }
+}
