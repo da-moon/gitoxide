@@ -24,11 +24,11 @@ pub enum Order {
 }
 
 /// Seconds in one day used for age calculations.
-const SECONDS_PER_DAY: f64 = 86_400.0;
-/// Exponent applied to the age weight for quadratic decay.
-const AGE_EXPONENT: i32 = 2;
-/// Reference size in bytes for the size penalty computation.
-const SIZE_PENALTY_REF: f64 = 1024.0;
+const SECONDS_PER_DAY: i64 = 86_400;
+/// Default exponent applied to the age weight for quadratic decay.
+pub const DEFAULT_AGE_EXPONENT: f64 = 2.0;
+/// Default reference size in bytes for the size penalty computation.
+pub const DEFAULT_SIZE_PENALTY_REF: f64 = 1024.0;
 
 #[derive(Clone)]
 /// Parameters controlling repository traversal and output formatting.
@@ -43,6 +43,12 @@ pub struct Options {
     pub order: Order,
     /// If set, only print file paths without their scores.
     pub path_only: bool,
+    /// Override the current time for deterministic scoring.
+    pub now: Option<i64>,
+    /// Age weighting exponent controlling decay speed.
+    pub age_exp: f64,
+    /// Reference size in bytes for the file size penalty.
+    pub size_ref: f64,
 }
 
 #[derive(Clone)]
@@ -66,8 +72,8 @@ impl Analyzer {
             Err(_) => return Ok(Vec::new()),
         };
 
-        // Use the current time to weight commits based on their age.
-        let now = Self::current_timestamp();
+        // Use either the injected timestamp or the current time to weight commits.
+        let now = self.opts.now.unwrap_or_else(Self::current_timestamp);
 
         // Gather scores for all files touched in the selected commits.
         let scores = self.collect_scores(&repo, start, since.as_ref(), now)?;
@@ -139,8 +145,13 @@ impl Analyzer {
         now: i64,
         scores: &mut HashMap<PathBuf, f64>,
     ) -> Result<()> {
-        // Determine the parent tree to diff against; the first parent if it exists.
-        let parent = commit.parent_ids().next().map(|id| id.detach());
+        // Skip merge commits which have more than one parent to keep parity with the original implementation.
+        let mut parents = commit.parent_ids();
+        let parent = match parents.next() {
+            Some(first) if parents.next().is_none() => Some(first.detach()),
+            Some(_) => return Ok(()),
+            None => None,
+        };
         let (from, to) = crate::sdk::diff::commit_trees(repo, id, parent);
 
         // Obtain a diff object describing changes introduced by this commit.
@@ -156,14 +167,14 @@ impl Analyzer {
 
     /// Compute the age-based weight for a commit.
     fn age_weight(&self, commit: &gix::Commit<'_>, now: i64) -> Result<f64> {
-        // Calculate time difference in days between the commit and now.
-        let mut age_days = (now - commit.time().into_diagnostic()?.seconds) as f64 / SECONDS_PER_DAY;
-        if age_days < 0.0 {
-            age_days = 0.0;
-        }
+        // Calculate time difference in days between the commit and now using integer division
+        // so commits less than a day apart yield the same weight. Negative ages are clamped to zero.
+        let commit_secs = commit.time().into_diagnostic()?.seconds;
+        let age_secs = now.saturating_sub(commit_secs);
+        let age_days = (age_secs / SECONDS_PER_DAY) as f64;
 
-        // Younger commits should dominate the score, hence a squared decay.
-        Ok(1.0 / (age_days + 1.0).powi(AGE_EXPONENT))
+        // Younger commits should dominate the score, using a configurable exponent.
+        Ok(1.0 / (age_days + 1.0).powf(self.opts.age_exp))
     }
 
     /// Iterate over all changes of a commit and update scores.
@@ -232,15 +243,15 @@ impl Analyzer {
     /// Update the score for a single file path.
     fn update_score(&self, scores: &mut HashMap<PathBuf, f64>, path: PathBuf, size: u64, weight: f64) {
         // Smaller files yield higher scores while large blobs are penalized.
-        let penalty = Self::size_penalty(size);
+        let penalty = self.size_penalty(size);
 
         // Accumulate weighted score for this path.
         *scores.entry(path).or_default() += penalty * weight;
     }
 
     /// Return the penalty for a blob of the given size.
-    fn size_penalty(size: u64) -> f64 {
-        1.0 / (1.0 + ((size as f64) / SIZE_PENALTY_REF).sqrt())
+    fn size_penalty(&self, size: u64) -> f64 {
+        1.0 / (1.0 + ((size as f64) / self.opts.size_ref).sqrt())
     }
 
     /// Print the computed scores either as text table or JSON.

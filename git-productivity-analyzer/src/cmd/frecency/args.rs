@@ -1,5 +1,5 @@
 use crate::cmd::common::CommonArgs;
-use crate::sdk::frecency::Order;
+use crate::sdk::frecency::{Order, DEFAULT_AGE_EXPONENT, DEFAULT_SIZE_PENALTY_REF};
 use clap::{Args as ClapArgs, ValueHint};
 use std::{collections::HashSet, path::PathBuf};
 
@@ -19,8 +19,38 @@ pub struct Args {
     pub max_commits: Option<usize>,
 
     /// Sort results either ascending or descending by score.
-    #[arg(long, value_enum, default_value_t = Order::Descending, help = "Sort order")]
-    pub order: Order,
+    #[arg(
+        long,
+        value_enum,
+        conflicts_with_all = ["ascending", "descending"],
+        help = "Sort order"
+    )]
+    pub order: Option<Order>,
+
+    /// Alias for `--order ascending`.
+    #[arg(long, conflicts_with_all = ["order", "descending"], help = "Sort ascending")]
+    pub ascending: bool,
+
+    /// Alias for `--order descending`.
+    #[arg(long, conflicts_with_all = ["order", "ascending"], help = "Sort descending")]
+    pub descending: bool,
+
+    /// Use this timestamp as `now` instead of the current time.
+    #[arg(long, value_name = "secs", help = "Reference timestamp for age weighting")]
+    pub now: Option<i64>,
+
+    /// Exponent used when weighting commit age.
+    #[arg(long, default_value_t = DEFAULT_AGE_EXPONENT, value_name = "n", help = "Age weight exponent")]
+    pub age_exp: f64,
+
+    /// Reference size in bytes for the file size penalty.
+    #[arg(
+        long,
+        default_value_t = DEFAULT_SIZE_PENALTY_REF,
+        value_name = "bytes",
+        help = "File size penalty reference"
+    )]
+    pub size_ref: f64,
 
     /// Print only the path for each entry, omitting the score column.
     #[arg(long, help = "Only print file paths")]
@@ -35,12 +65,25 @@ impl From<Args> for crate::sdk::frecency::Options {
         } else {
             Some(a.paths.into_iter().collect::<HashSet<_>>())
         };
+        let order = if let Some(o) = a.order {
+            o
+        } else if a.ascending {
+            Order::Ascending
+        } else if a.descending {
+            Order::Descending
+        } else {
+            Order::Descending
+        };
+
         Self {
             repo: a.common.into(),
             paths,
             max_commits: a.max_commits,
-            order: a.order,
+            order,
             path_only: a.path_only,
+            now: a.now,
+            age_exp: a.age_exp,
+            size_ref: a.size_ref,
         }
     }
 }
