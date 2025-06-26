@@ -43,5 +43,6 @@ async fn main() -> Result<()> {
         cmd::Command::TimeOfDay(args) => cmd::time_of_day::run(args, &globals).await,
         cmd::Command::Churn(args) => cmd::churn::run(args, &globals).await,
         cmd::Command::CommitSize(args) => cmd::commit_size::run(args, &globals).await,
+        cmd::Command::Frecency(args) => cmd::frecency::run(args, &globals).await,
     }
 }
