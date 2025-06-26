@@ -75,7 +75,7 @@ fn frecency_empty_repository() {
 }
 
 #[test]
-/// Verify `--order ascending` flips the default descending order.
+/// Verify `--ascending` flips the default descending order.
 fn order_descending_and_ascending() {
     let dir = init_repo();
     let output = Command::new(bin())
@@ -87,13 +87,7 @@ fn order_descending_and_ascending() {
     assert!(first.contains("file2.txt"));
 
     let output = Command::new(bin())
-        .args([
-            "frecency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--order",
-            "ascending",
-        ])
+        .args(["frecency", "--working-dir", dir.path().to_str().unwrap(), "--ascending"])
         .output()
         .unwrap();
     let out = String::from_utf8_lossy(&output.stdout);

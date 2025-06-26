@@ -38,6 +38,10 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--paths <path>...` - only consider these paths
   - `--max-commits <n>` - limit the number of commits scanned
   - `--order <ascending|descending>` - sort results
+  - `--ascending` / `--descending` - convenience flags for ordering
+  - `--now <secs>` - evaluate frecency at this timestamp
+  - `--age-exp <n>` - exponent for age weighting
+  - `--size-ref <bytes>` - reference size for the file penalty
   - `--path-only` - print only file paths
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
@@ -70,4 +74,5 @@ you can gauge the typical review burden and spot unusually large commits.
 size of each change. Every commit contributes a score of
 `size_penalty(blob_size) * age_weight(days_since_commit)` to the affected files.
 Recent commits therefore have a greater impact while large files are penalized.
+The `--age-exp` and `--size-ref` flags allow tuning the decay rate and size penalty.
 Sorting the results reveals hotspots that changed often in the analyzed range.
