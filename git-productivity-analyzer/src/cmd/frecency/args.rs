@@ -1,4 +1,5 @@
 use crate::cmd::common::CommonArgs;
+use crate::sdk::frecency::Order;
 use clap::{Args as ClapArgs, ValueHint};
 use std::{collections::HashSet, path::PathBuf};
 
@@ -17,13 +18,9 @@ pub struct Args {
     #[arg(long, help = "Limit to the newest N commits")]
     pub max_commits: Option<usize>,
 
-    /// Sort results from lowest to highest score.
-    #[arg(long, conflicts_with = "descending", help = "Sort scores ascending")]
-    pub ascending: bool,
-
-    /// Sort results from highest to lowest score.
-    #[arg(long, conflicts_with = "ascending", help = "Sort scores descending")]
-    pub descending: bool,
+    /// Sort results either ascending or descending by score.
+    #[arg(long, value_enum, default_value_t = Order::Descending, help = "Sort order")]
+    pub order: Order,
 
     /// Print only the path for each entry, omitting the score column.
     #[arg(long, help = "Only print file paths")]
@@ -42,8 +39,7 @@ impl From<Args> for crate::sdk::frecency::Options {
             repo: a.common.into(),
             paths,
             max_commits: a.max_commits,
-            ascending: a.ascending,
-            descending: a.descending,
+            order: a.order,
             path_only: a.path_only,
         }
     }
