@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
+const NOW: &str = "1578096000"; // 2020-01-04T00:00:00Z
 
 /// Create a tiny repository with three sequential commits for testing.
 fn init_repo() -> TempDir {
@@ -65,7 +66,13 @@ fn frecency_empty_repository() {
         .expect("failed to init repo");
 
     let output = Command::new(bin())
-        .args(["frecency", "--working-dir", temp.path().to_str().unwrap()])
+        .args([
+            "frecency",
+            "--working-dir",
+            temp.path().to_str().unwrap(),
+            "--now",
+            NOW,
+        ])
         .output()
         .expect("failed to run frecency");
 
@@ -79,7 +86,13 @@ fn frecency_empty_repository() {
 fn order_descending_and_ascending() {
     let dir = init_repo();
     let output = Command::new(bin())
-        .args(["frecency", "--working-dir", dir.path().to_str().unwrap()])
+        .args([
+            "frecency",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--now",
+            NOW,
+        ])
         .output()
         .unwrap();
     let out = String::from_utf8_lossy(&output.stdout);
@@ -87,7 +100,14 @@ fn order_descending_and_ascending() {
     assert!(first.contains("file2.txt"));
 
     let output = Command::new(bin())
-        .args(["frecency", "--working-dir", dir.path().to_str().unwrap(), "--ascending"])
+        .args([
+            "frecency",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--ascending",
+            "--now",
+            NOW,
+        ])
         .output()
         .unwrap();
     let out = String::from_utf8_lossy(&output.stdout);
@@ -107,6 +127,8 @@ fn path_filter_and_max_commits() {
             "--paths",
             "file1.txt",
             "file2.txt",
+            "--now",
+            NOW,
         ])
         .output()
         .unwrap();
@@ -122,6 +144,8 @@ fn path_filter_and_max_commits() {
             dir.path().to_str().unwrap(),
             "--max-commits",
             "1",
+            "--now",
+            NOW,
         ])
         .output()
         .unwrap();
@@ -134,7 +158,14 @@ fn path_filter_and_max_commits() {
 fn json_output() {
     let dir = init_repo();
     let output = Command::new(bin())
-        .args(["--json", "frecency", "--working-dir", dir.path().to_str().unwrap()])
+        .args([
+            "--json",
+            "frecency",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--now",
+            NOW,
+        ])
         .output()
         .unwrap();
     serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();

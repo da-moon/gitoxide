@@ -8,30 +8,28 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 #[derive(Serialize)]
-/// Helper struct to make printing and JSON serialization uniform.
-struct SerializableScores {
-    scores: Vec<(String, f64)>,
+struct PathScore {
+    path: String,
+    score: f64,
 }
 
-impl SerializableScores {
-    fn from(list: &[(PathBuf, f64)]) -> Self {
-        Self {
-            scores: list.iter().map(|(p, s)| (p.display().to_string(), *s)).collect(),
-        }
-    }
+fn to_path_scores(list: &[(PathBuf, f64)]) -> Vec<PathScore> {
+    list.iter()
+        .map(|(p, s)| PathScore {
+            path: p.display().to_string(),
+            score: *s,
+        })
+        .collect()
 }
 
 #[derive(Serialize)]
-/// Simple JSON representation for path-only output.
-struct SerializablePaths {
+struct PathList {
     paths: Vec<String>,
 }
 
-impl SerializablePaths {
-    fn from(list: &[(PathBuf, f64)]) -> Self {
-        Self {
-            paths: list.iter().map(|(p, _)| p.display().to_string()).collect(),
-        }
+fn to_path_list(list: &[(PathBuf, f64)]) -> PathList {
+    PathList {
+        paths: list.iter().map(|(p, _)| p.display().to_string()).collect(),
     }
 }
 
@@ -51,9 +49,9 @@ impl Analyzer {
         };
 
         if self.opts.path_only {
-            crate::sdk::print_json_or(self.globals.json, &SerializablePaths::from(scores), print_plain);
+            crate::sdk::print_json_or(self.globals.json, &to_path_list(scores), print_plain);
         } else {
-            crate::sdk::print_json_or(self.globals.json, &SerializableScores::from(scores), print_plain);
+            crate::sdk::print_json_or(self.globals.json, &to_path_scores(scores), print_plain);
         }
     }
 }
