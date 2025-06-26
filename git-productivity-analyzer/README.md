@@ -32,6 +32,13 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
   - `--percentiles <list>` - show additional percentiles for commit size
+- `frecency` — rank files by how recently and frequently they changed.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+  - `--paths <path>...` - only consider these paths
+  - `--max-commits <n>` - limit the number of commits scanned
+  - `--ascending`/`--descending` - sort results
+  - `--path-only` - print only file paths
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
@@ -56,3 +63,11 @@ Large commits are harder to review and carry a higher risk of introducing
 problems. Keeping commit sizes small makes code reviews faster and helps isolate
 issues. The `commit-size` command summarizes how much code changes per commit so
 you can gauge the typical review burden and spot unusually large commits.
+
+## File Frecency
+
+`frecency` ranks files by combining the age of commits touching them with the
+size of each change. Every commit contributes a score of
+`size_penalty(blob_size) * age_weight(days_since_commit)` to the affected files.
+Recent commits therefore have a greater impact while large files are penalized.
+Sorting the results reveals hotspots that changed often in the analyzed range.

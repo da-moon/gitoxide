@@ -2,6 +2,7 @@ pub mod churn;
 pub mod commit_frequency;
 pub mod commit_size;
 pub mod common;
+pub mod frecency;
 pub mod hours;
 pub mod time_of_day;
 
@@ -19,4 +20,6 @@ pub enum Command {
     Churn(churn::Args),
     #[command(about = "Analyze distribution of commit sizes")]
     CommitSize(commit_size::Args),
+    #[command(about = "Score files by recent change frequency")]
+    Frecency(frecency::Args),
 }
