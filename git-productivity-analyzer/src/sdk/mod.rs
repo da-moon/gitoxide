@@ -2,6 +2,7 @@ pub mod churn;
 pub mod commit_frequency;
 pub mod commit_size;
 mod common;
+pub mod diff;
 mod helpers;
 pub mod hours;
 mod revision;

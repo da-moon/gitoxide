@@ -1,4 +1,4 @@
-use crate::sdk::churn::{commit_trees, configure_changes, create_changes};
+use crate::sdk::diff::{commit_trees, configure_changes, create_changes};
 use crate::{error::Result, Globals};
 use serde::Serialize;
 
@@ -18,6 +18,17 @@ pub struct Summary {
 pub struct Options {
     pub repo: crate::sdk::RepoOptions,
     pub percentiles: Option<Vec<f64>>,
+}
+
+impl Options {
+    pub fn validate(&self) -> crate::error::Result<()> {
+        if let Some(pcts) = &self.percentiles {
+            if let Some(p) = pcts.iter().copied().find(|p| !(0.0..=100.0).contains(p)) {
+                return Err(miette::miette!("percentile {p} out of range 0..=100"));
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone)]

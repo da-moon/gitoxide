@@ -36,7 +36,6 @@ pub struct Analyzer {
 impl Analyzer {
     pub fn analyze(self) -> Result<(Summary, String)> {
         let mut out_buf = Vec::new();
-        let (_repo, _start, _since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
         let spec = self.globals.until.as_deref().unwrap_or(&self.opts.repo.rev_spec);
         estimate(
             &self.opts.repo.working_dir,
