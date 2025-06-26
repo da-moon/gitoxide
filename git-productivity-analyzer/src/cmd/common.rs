@@ -18,21 +18,35 @@ pub struct CommonArgs {
     pub rev_spec: String,
 }
 
-/// Implements `From<$args>` for `$opts` when all fields (except `repo`) share the same
-/// name in both types.
+/// Implements `From<$args>` for `$opts`.
 ///
-/// # Limitation
-/// This macro assumes that the provided `$field`s exist with the same identifier
-/// in both the source and destination types. If field names differ or custom
-/// conversion logic is needed, implement `From` manually.
+/// Each `$field` may optionally specify a source field using `dest => src`.
+/// If omitted, the field name is assumed to be identical in both types.
+///
+/// ```
+/// impl_from_args!(Args, Options { foo, bar => other });
+/// // expands to `foo: a.foo` and `bar: a.other`.
+/// ```
 #[macro_export]
 macro_rules! impl_from_args {
-    ($args:ty, $opts:ty { $($field:ident),* }) => {
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }) => {
         impl From<$args> for $opts {
             fn from(a: $args) -> Self {
                 Self {
                     repo: a.common.into(),
-                    $($field: a.$field,)*
+                    $( $field: a.$field, )*
+                }
+            }
+        }
+    };
+
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    $( $field: a.$field, )*
+                    $( $dest: a.$src, )*
                 }
             }
         }

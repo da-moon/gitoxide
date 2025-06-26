@@ -1,10 +1,10 @@
 use crate::error::Result;
 use gix::{object::tree::diff::Platform, Tree};
-use miette::Report;
+use miette::IntoDiagnostic;
 
 /// Create a diff platform for the given tree.
 pub fn create_changes<'a, 'repo>(tree: &'a Tree<'repo>) -> Result<Platform<'a, 'repo>> {
-    tree.changes().map_err(|e| Report::msg(e.to_string()))
+    tree.changes().into_diagnostic()
 }
 
 /// Configure the diff platform with rename tracking and path tracking.

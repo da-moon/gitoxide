@@ -68,7 +68,7 @@ impl Analyzer {
         let mut totals = BTreeMap::<String, Counts>::new();
         let mut cache = repo
             .diff_resource_cache(gix::diff::blob::pipeline::Mode::ToGit, Default::default())
-            .map_err(|e| miette::Report::msg(e.to_string()))?;
+            .into_diagnostic()?;
         crate::sdk::walk_commits(&repo, start, since.as_ref(), |id, commit| {
             let author = commit.author().into_diagnostic()?;
             if !crate::sdk::author_matches(&author, &self.opts.author) {
@@ -109,7 +109,7 @@ impl Analyzer {
                 self.apply_change(change, author, totals, cache);
                 Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue)
             })
-            .map_err(|e| miette::Report::msg(e.to_string()))?;
+            .into_diagnostic()?;
         Ok(())
     }
 
