@@ -64,6 +64,9 @@ crate::impl_analyzer_boilerplate!(Options, Analyzer);
 impl Analyzer {
     /// Analyze the repository and return each file with its frecency score.
     pub fn analyze(self) -> Result<Vec<(PathBuf, f64)>> {
+        if self.opts.size_ref <= 0.0 {
+            return Err(miette::miette!("--size-ref must be positive"));
+        }
         // Discover the repository and handle repositories without commits
         // gracefully by returning an empty result instead of an error.
         let repo = gix::discover(&self.opts.repo.working_dir).into_diagnostic()?;
@@ -98,6 +101,7 @@ impl Analyzer {
     ) -> Result<HashMap<PathBuf, f64>> {
         // Track frecency score per file path.
         let mut scores = HashMap::new();
+        let mut size_cache = HashMap::new();
 
         // Optional commit limit to reduce execution time on large repositories.
         let limit = self.opts.max_commits.unwrap_or(usize::MAX);
@@ -109,7 +113,7 @@ impl Analyzer {
             }
 
             // Accumulate frecency contributions from this commit.
-            self.process_commit(repo, id, &commit, now, &mut scores)?;
+            self.process_commit(repo, id, &commit, now, &mut scores, &mut size_cache)?;
             count += 1;
             Ok(())
         })?;
@@ -151,6 +155,7 @@ impl Analyzer {
         commit: &gix::Commit<'_>,
         now: i64,
         scores: &mut HashMap<PathBuf, f64>,
+        size_cache: &mut HashMap<gix::ObjectId, u64>,
     ) -> Result<()> {
         // Skip merge commits which have more than one parent to keep parity with the original implementation.
         let mut parents = commit.parent_ids();
@@ -169,7 +174,7 @@ impl Analyzer {
         let weight = self.age_weight(commit, now)?;
 
         // Apply the weight to all changed paths.
-        self.collect_changes(&mut changes, &to, weight, scores)
+        self.collect_changes(&mut changes, &to, weight, scores, size_cache)
     }
 
     /// Compute the age-based weight for a commit.
@@ -191,11 +196,12 @@ impl Analyzer {
         to: &gix::Tree<'_>,
         weight: f64,
         scores: &mut HashMap<PathBuf, f64>,
+        size_cache: &mut HashMap<gix::ObjectId, u64>,
     ) -> Result<()> {
         changes
             .for_each_to_obtain_tree(to, |change| {
                 // Skip deletions and non-blob entries; only count file modifications.
-                if let Some((path, size)) = self.extract_change_info(change) {
+                if let Some((path, size)) = self.extract_change_info(change, size_cache) {
                     // Increase score for this path based on change weight and file size.
                     self.update_score(scores, path, size, weight);
                 }
@@ -206,7 +212,11 @@ impl Analyzer {
     }
 
     /// Convert a change into a path and blob size if it represents a file.
-    fn extract_change_info(&self, change: gix::object::tree::diff::Change<'_, '_, '_>) -> Option<(PathBuf, u64)> {
+    fn extract_change_info(
+        &self,
+        change: gix::object::tree::diff::Change<'_, '_, '_>,
+        size_cache: &mut HashMap<gix::ObjectId, u64>,
+    ) -> Option<(PathBuf, u64)> {
         use gix::object::tree::diff::Change::*;
         // Extract relevant information depending on the type of change.
         let (mode, id, location) = match change {
@@ -237,8 +247,11 @@ impl Analyzer {
             return None;
         }
 
-        // Determine blob size for the penalty term without loading the entire blob.
-        let size = id.try_header().ok().flatten().map(|h| h.size()).unwrap_or(0);
+        // Determine blob size for the penalty term, caching results to avoid
+        // repeatedly loading headers in large repositories.
+        let size = *size_cache
+            .entry(id.detach())
+            .or_insert_with(|| id.try_header().ok().flatten().map(|h| h.size()).unwrap_or(0));
         Some((path, size))
     }
 

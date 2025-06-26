@@ -43,6 +43,7 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--age-exp <n>` - exponent for age weighting
   - `--size-ref <bytes>` - reference size for the file penalty
   - `--path-only` - print only file paths
+  - merge commits are skipped when tallying file scores
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
@@ -75,4 +76,6 @@ size of each change. Every commit contributes a score of
 `size_penalty(blob_size) * age_weight(days_since_commit)` to the affected files.
 Recent commits therefore have a greater impact while large files are penalized.
 The `--age-exp` and `--size-ref` flags allow tuning the decay rate and size penalty.
-Sorting the results reveals hotspots that changed often in the analyzed range.
+Results are printed as a list of `{path, score}` objects when `--json` is used,
+while merge commits are ignored entirely. Sorting the output reveals hotspots
+that changed often in the analyzed range.

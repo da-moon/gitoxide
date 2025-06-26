@@ -5,6 +5,9 @@ use std::{collections::HashSet, path::PathBuf};
 
 #[derive(Debug, ClapArgs)]
 /// Command line flags accepted by the `frecency` subcommand.
+///
+/// Merge commits are ignored when tallying scores and JSON output
+/// is an array of `{path, score}` objects.
 pub struct Args {
     /// Shared options specifying repository location and revision range.
     #[command(flatten)]

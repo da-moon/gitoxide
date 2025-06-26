@@ -22,15 +22,15 @@ snapshot="$SCRIPT_DIR/snapshots/frecency"
     export REPO_ROOT="$repo_root"
     it "ranks files by frecency" && {
       WITH_SNAPSHOT="$snapshot/default" \
-      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" 2>/dev/null)"
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --now 1578096000 2>/dev/null)"
     }
     it "supports --ascending" && {
       WITH_SNAPSHOT="$snapshot/ascending" \
-      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --ascending 2>/dev/null)"
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --ascending --now 1578096000 2>/dev/null)"
     }
     it "filters paths" && {
       WITH_SNAPSHOT="$snapshot/filter" \
-      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --paths file2 2>/dev/null)"
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --paths file2 --now 1578096000 2>/dev/null)"
     }
   )
 )
