@@ -4,5 +4,6 @@
 //! how recently and frequently they were changed.
 
 pub mod analyzer;
+mod printer;
 
-pub use analyzer::{Options, Order, DEFAULT_AGE_EXPONENT, DEFAULT_SIZE_PENALTY_REF};
+pub use analyzer::{Analyzer, Options, Order, DEFAULT_AGE_EXPONENT, DEFAULT_SIZE_PENALTY_REF};

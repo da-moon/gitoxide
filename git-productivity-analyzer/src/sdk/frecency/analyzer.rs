@@ -8,7 +8,6 @@ use crate::{error::Result, Globals};
 use clap::ValueEnum;
 use gix::bstr::ByteSlice;
 use miette::IntoDiagnostic;
-use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -55,9 +54,9 @@ pub struct Options {
 /// Analyze git history to compute file frecency scores.
 pub struct Analyzer {
     /// Options provided by the caller.
-    opts: Options,
+    pub(super) opts: Options,
     /// Global flags controlling repository access and output.
-    globals: Globals,
+    pub(super) globals: Globals,
 }
 
 crate::impl_analyzer_boilerplate!(Options, Analyzer);
@@ -65,12 +64,19 @@ crate::impl_analyzer_boilerplate!(Options, Analyzer);
 impl Analyzer {
     /// Analyze the repository and return each file with its frecency score.
     pub fn analyze(self) -> Result<Vec<(PathBuf, f64)>> {
-        // Open the repository and resolve the commit range specified via global flags.
-        // If no commits exist yet, return an empty result instead of an error.
-        let (repo, start, since) = match crate::sdk::open_with_range(&self.opts.repo, &self.globals) {
-            Ok(v) => v,
-            Err(_) => return Ok(Vec::new()),
-        };
+        // Discover the repository and handle repositories without commits
+        // gracefully by returning an empty result instead of an error.
+        let repo = gix::discover(&self.opts.repo.working_dir).into_diagnostic()?;
+        match repo.head_id() {
+            Ok(_) => {}
+            Err(gix::reference::head_id::Error::PeelToId(gix::head::peel::into_id::Error::Unborn { .. })) => {
+                return Ok(Vec::new())
+            }
+            Err(e) => return Err(miette::Report::msg(e.to_string())),
+        }
+
+        let start = crate::sdk::resolve_start_commit(&repo, &self.opts.repo.rev_spec, self.globals.until.as_deref())?;
+        let since = crate::sdk::resolve_since_commit(&repo, self.globals.since.as_deref())?;
 
         // Use either the injected timestamp or the current time to weight commits.
         let now = self.opts.now.unwrap_or_else(Self::current_timestamp);
@@ -118,11 +124,12 @@ impl Analyzer {
         // Determine desired ordering once before sorting.
         let desc = matches!(self.opts.order, Order::Descending);
         out.sort_by(|a, b| {
-            let ord = a.1.total_cmp(&b.1);
-            if desc {
-                ord.reverse()
+            use std::cmp::Ordering;
+            let primary = if desc { b.1.total_cmp(&a.1) } else { a.1.total_cmp(&b.1) };
+            if primary == Ordering::Equal {
+                a.0.cmp(&b.0)
             } else {
-                ord
+                primary
             }
         });
         out
@@ -251,55 +258,15 @@ impl Analyzer {
 
     /// Return the penalty for a blob of the given size.
     fn size_penalty(&self, size: u64) -> f64 {
-        1.0 / (1.0 + ((size as f64) / self.opts.size_ref).sqrt())
-    }
-
-    /// Print the computed scores either as text table or JSON.
-    pub fn print_scores(&self, scores: &[(PathBuf, f64)]) {
-        if self.opts.path_only {
-            crate::sdk::print_json_or(self.globals.json, &SerializablePaths::from(scores), || {
-                for (path, _) in scores {
-                    println!("{}", path.display());
-                }
-            });
+        if self.opts.size_ref <= 0.0 {
+            1.0
         } else {
-            crate::sdk::print_json_or(self.globals.json, &SerializableScores::from(scores), || {
-                for (path, score) in scores {
-                    println!("{:.4}\t{}", score, path.display());
-                }
-            });
+            1.0 / (1.0 + ((size as f64) / self.opts.size_ref).sqrt())
         }
     }
-}
 
-#[derive(Serialize)]
-/// Helper struct to make printing and JSON serialization uniform.
-struct SerializableScores {
-    scores: Vec<(String, f64)>,
-}
-
-impl SerializableScores {
-    /// Convert `(PathBuf, f64)` tuples into owned strings for JSON output.
-    fn from(list: &[(PathBuf, f64)]) -> Self {
-        Self {
-            scores: list.iter().map(|(p, s)| (p.display().to_string(), *s)).collect(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-/// Simple JSON representation for path-only output.
-struct SerializablePaths {
-    paths: Vec<String>,
-}
-
-impl SerializablePaths {
-    /// Convert the sorted list of paths into owned strings for JSON output.
-    fn from(list: &[(PathBuf, f64)]) -> Self {
-        Self {
-            paths: list.iter().map(|(p, _)| p.display().to_string()).collect(),
-        }
-    }
+    // Printing logic is implemented in `printer.rs` to keep this file focused on
+    // the scoring algorithm.
 }
 
 impl crate::sdk::AnalyzerTrait for Analyzer {
