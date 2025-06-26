@@ -5,5 +5,7 @@
 
 pub mod analyzer;
 mod printer;
+mod scoring;
+mod traversal;
 
 pub use analyzer::{Analyzer, Options, Order, DEFAULT_AGE_EXPONENT, DEFAULT_SIZE_PENALTY_REF};
