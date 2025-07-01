@@ -8,9 +8,11 @@ pub struct Summary {
     pub min_files: u32,
     pub max_files: u32,
     pub avg_files: f64,
+    pub median_files: f64,
     pub min_lines: u32,
     pub max_lines: u32,
     pub avg_lines: f64,
+    pub median_lines: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub line_percentiles: Option<Vec<(f64, u32)>>,
 }
@@ -77,6 +79,9 @@ impl Analyzer {
         } else {
             files.iter().copied().map(f64::from).sum::<f64>() / files.len() as f64
         };
+        let mut files_sorted = files.clone();
+        files_sorted.sort_unstable();
+        let median_files = median(&files_sorted);
         let min_lines = lines.iter().copied().min().unwrap_or(0);
         let max_lines = lines.iter().copied().max().unwrap_or(0);
         let avg_lines = if lines.is_empty() {
@@ -84,6 +89,9 @@ impl Analyzer {
         } else {
             lines.iter().copied().map(f64::from).sum::<f64>() / lines.len() as f64
         };
+        let mut lines_sorted = lines.clone();
+        lines_sorted.sort_unstable();
+        let median_lines = median(&lines_sorted);
         let line_percentiles = if lines.is_empty() {
             None
         } else {
@@ -98,9 +106,11 @@ impl Analyzer {
             min_files,
             max_files,
             avg_files,
+            median_files,
             min_lines,
             max_lines,
             avg_lines,
+            median_lines,
             line_percentiles,
         }
     }
@@ -108,12 +118,12 @@ impl Analyzer {
     pub fn print_summary(&self, summary: &Summary) {
         crate::sdk::print_json_or(self.globals.json, summary, || {
             println!(
-                "files per commit: min={} max={} avg={:.2}",
-                summary.min_files, summary.max_files, summary.avg_files
+                "files per commit: min={} max={} avg={:.2} median={:.2}",
+                summary.min_files, summary.max_files, summary.avg_files, summary.median_files
             );
             println!(
-                "lines per commit: min={} max={} avg={:.2}",
-                summary.min_lines, summary.max_lines, summary.avg_lines
+                "lines per commit: min={} max={} avg={:.2} median={:.2}",
+                summary.min_lines, summary.max_lines, summary.avg_lines, summary.median_lines
             );
             if let Some(pcts) = &summary.line_percentiles {
                 for (p, value) in pcts {
@@ -121,6 +131,18 @@ impl Analyzer {
                 }
             }
         });
+    }
+}
+
+fn median(values: &[u32]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    let mid = values.len() / 2;
+    if values.len() % 2 == 1 {
+        values[mid] as f64
+    } else {
+        (values[mid - 1] + values[mid]) as f64 / 2.0
     }
 }
 

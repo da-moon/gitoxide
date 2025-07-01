@@ -32,6 +32,7 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
   - `--percentiles <list>` - show additional percentiles for commit size
+  - `--json` - machine readable output
 - `frecency` — rank files by how recently and frequently they changed.
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
@@ -66,8 +67,10 @@ development activity across the repository.
 
 Large commits are harder to review and carry a higher risk of introducing
 problems. Keeping commit sizes small makes code reviews faster and helps isolate
-issues. The `commit-size` command summarizes how much code changes per commit so
-you can gauge the typical review burden and spot unusually large commits.
+issues. Small changes let reviewers focus on the intent of each commit which
+reduces the chances of bugs slipping through. The `commit-size` command
+summarizes how much code changes per commit so you can gauge the typical review
+burden and spot unusually large commits.
 
 ## File Frecency
 
