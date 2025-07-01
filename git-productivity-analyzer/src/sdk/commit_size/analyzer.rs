@@ -45,7 +45,7 @@ impl Analyzer {
         let (repo, start, since) = crate::sdk::open_with_range(&self.opts.repo, &self.globals)?;
         let mut lines = Vec::new();
         let mut files = Vec::new();
-        crate::sdk::walk_commits(&repo, start, since.as_ref(), |id, commit| {
+        crate::sdk::walk_commits(&repo, start, since.as_ref(), false, |id, commit| {
             self.process_commit(&repo, id, &commit, &mut lines, &mut files)
         })?;
         Ok(self.build_summary(lines, files))

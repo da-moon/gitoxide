@@ -50,7 +50,7 @@ impl Analyzer {
         since: Option<&gix::ObjectId>,
         bins: &mut [u32],
     ) -> Result<()> {
-        crate::sdk::walk_commits(repo, start, since, |_, commit| {
+        crate::sdk::walk_commits(repo, start, since, false, |_, commit| {
             process_commit(commit, &self.opts.author, bins)
         })
     }

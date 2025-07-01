@@ -38,7 +38,6 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--paths <path>...` - only consider these paths
   - `--max-commits <n>` - limit the number of commits scanned
   - `--order <ascending|descending>` - sort results
-  - `--ascending` / `--descending` - convenience flags for ordering
   - `--now <secs>` - evaluate frecency at this timestamp
   - `--age-exp <n>` - exponent for age weighting
   - `--size-ref <bytes>` - reference size for the file penalty
@@ -46,7 +45,7 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
 - merge commits are skipped when tallying file scores
  - when multiple files have the same score they are sorted alphabetically to keep output stable
 
-All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
+All commands accept the global options `--since <date>`, `--until <date>`, `--json`, and `--log-level <level>` to limit the date range, choose output format, and control verbosity.
 
 ## Time Estimation Algorithm
 
@@ -82,3 +81,5 @@ while merge commits are ignored entirely. Sorting the output reveals hotspots
 that changed often in the analyzed range.
 Entries with identical scores are ordered alphabetically so results are
 stable across runs.
+Warnings encountered during analysis are emitted using the `log` crate.
+Configure `RUST_LOG` or the `--log-level` flag to control their visibility.

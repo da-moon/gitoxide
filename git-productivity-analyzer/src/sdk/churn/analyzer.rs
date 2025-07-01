@@ -69,7 +69,7 @@ impl Analyzer {
         let mut cache = repo
             .diff_resource_cache(gix::diff::blob::pipeline::Mode::ToGit, Default::default())
             .into_diagnostic()?;
-        crate::sdk::walk_commits(&repo, start, since.as_ref(), |id, commit| {
+        crate::sdk::walk_commits(&repo, start, since.as_ref(), false, |id, commit| {
             let author = commit.author().into_diagnostic()?;
             if !crate::sdk::author_matches(&author, &self.opts.author) {
                 return Ok(());

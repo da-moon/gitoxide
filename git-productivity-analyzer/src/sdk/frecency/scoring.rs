@@ -29,6 +29,6 @@ impl Analyzer {
     }
 
     pub(super) fn log_size_error(&self, id: gix::ObjectId, err: &dyn std::error::Error) {
-        eprintln!("warning: failed to read header for blob {id}: {err}");
+        log::warn!("failed to read header for blob {id}: {err}");
     }
 }

@@ -16,7 +16,7 @@ impl Analyzer {
         let mut size_cache = HashMap::new();
         let limit = self.opts.max_commits.unwrap_or(usize::MAX);
         let mut count = 0usize;
-        crate::sdk::walk_commits(repo, start, since, |id, commit| {
+        crate::sdk::walk_commits(repo, start, since, true, |id, commit| {
             if count >= limit {
                 return Ok(());
             }
@@ -36,12 +36,7 @@ impl Analyzer {
         scores: &mut HashMap<PathBuf, f64>,
         size_cache: &mut HashMap<gix::ObjectId, u64>,
     ) -> Result<()> {
-        let mut parents = commit.parent_ids();
-        let parent = match parents.next() {
-            Some(first) if parents.next().is_none() => Some(first.detach()),
-            Some(_) => return Ok(()),
-            None => None,
-        };
+        let parent = commit.parent_ids().next().map(|p| p.detach());
         let (from, to) = crate::sdk::diff::commit_trees(repo, id, parent);
         let mut changes = crate::sdk::diff::create_changes(&from)?;
         crate::sdk::diff::configure_changes(&mut changes);
@@ -102,7 +97,7 @@ impl Analyzer {
         let size = *size_cache.entry(id.detach()).or_insert_with(|| match id.try_header() {
             Ok(Some(h)) => h.size(),
             Ok(None) => {
-                eprintln!("warning: missing header for blob {id}");
+                log::warn!("missing header for blob {id}");
                 0
             }
             Err(err) => {
