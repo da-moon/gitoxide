@@ -22,21 +22,8 @@ pub struct Args {
     pub max_commits: Option<usize>,
 
     /// Sort results either ascending or descending by score.
-    #[arg(
-        long,
-        value_enum,
-        conflicts_with_all = ["ascending", "descending"],
-        help = "Sort order"
-    )]
-    pub order: Option<Order>,
-
-    /// Alias for `--order ascending`.
-    #[arg(long, conflicts_with_all = ["order", "descending"], help = "Sort ascending")]
-    pub ascending: bool,
-
-    /// Alias for `--order descending`.
-    #[arg(long, conflicts_with_all = ["order", "ascending"], help = "Sort descending")]
-    pub descending: bool,
+    #[arg(long, value_enum, default_value_t = Order::Descending, help = "Sort order")]
+    pub order: Order,
 
     /// Use this timestamp as `now` instead of the current time.
     #[arg(long, value_name = "secs", help = "Reference timestamp for age weighting")]
@@ -68,15 +55,7 @@ impl From<Args> for crate::sdk::frecency::Options {
         } else {
             Some(a.paths.into_iter().collect::<HashSet<_>>())
         };
-        let order = if let Some(o) = a.order {
-            o
-        } else if a.ascending {
-            Order::Ascending
-        } else if a.descending {
-            Order::Descending
-        } else {
-            Order::Descending
-        };
+        let order = a.order;
 
         Self {
             repo: a.common.into(),

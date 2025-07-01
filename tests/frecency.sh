@@ -30,9 +30,9 @@ snapshot="$SCRIPT_DIR/snapshots/frecency"
       WITH_SNAPSHOT="$snapshot/default" \
       expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --now 1578096000 2>/dev/null)"
     }
-    it "supports --ascending" && {
+    it "supports --order ascending" && {
       WITH_SNAPSHOT="$snapshot/ascending" \
-      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --ascending --now 1578096000 2>/dev/null)"
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- frecency --working-dir \"$PWD\" --order ascending --now 1578096000 2>/dev/null)"
     }
     it "filters paths" && {
       WITH_SNAPSHOT="$snapshot/filter" \

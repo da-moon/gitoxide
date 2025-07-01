@@ -29,6 +29,7 @@ pub fn walk_commits<'repo, F>(
     repo: &'repo gix::Repository,
     start: gix::ObjectId,
     since: Option<&gix::ObjectId>,
+    skip_merges: bool,
     mut f: F,
 ) -> Result<()>
 where
@@ -38,6 +39,9 @@ where
         let info = item.into_diagnostic()?;
         {
             let commit = repo.find_commit(info.id).into_diagnostic()?;
+            if skip_merges && commit.parent_ids().nth(1).is_some() {
+                continue;
+            }
             f(info.id, commit)?;
         }
         if let Some(id) = since {
