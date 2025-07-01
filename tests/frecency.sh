@@ -15,9 +15,15 @@ snapshot="$SCRIPT_DIR/snapshots/frecency"
       git checkout -b main &&
       git config commit.gpgsign false &&
       git config tag.gpgsign false &&
-      echo a > file1 && git add file1 && git commit -m first &&
-      echo b > file2 && git add file2 && git commit -m second &&
-      echo c > file3 && git add file3 && git commit -m third
+      export GIT_AUTHOR_DATE="2020-01-01T00:00:00 +0000" &&
+      export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE" &&
+      echo a > file1 && git add file1 && git commit -m first --date "$GIT_AUTHOR_DATE" &&
+      export GIT_AUTHOR_DATE="2020-01-02T00:00:00 +0000" &&
+      export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE" &&
+      echo b > file2 && git add file2 && git commit -m second --date "$GIT_AUTHOR_DATE" &&
+      export GIT_AUTHOR_DATE="2020-01-03T00:00:00 +0000" &&
+      export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE" &&
+      echo c > file3 && git add file3 && git commit -m third --date "$GIT_AUTHOR_DATE"
     )
     export REPO_ROOT="$repo_root"
     it "ranks files by frecency" && {
