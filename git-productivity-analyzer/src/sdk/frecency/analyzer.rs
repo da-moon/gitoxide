@@ -90,17 +90,6 @@ impl Analyzer {
         Ok(self.sort_scores(scores))
     }
 
-    /// Walk commits and accumulate scores for changed files.
-    fn collect_scores(
-        &self,
-        repo: &gix::Repository,
-        start: gix::ObjectId,
-        since: Option<&gix::ObjectId>,
-        now: i64,
-    ) -> Result<HashMap<PathBuf, f64>> {
-        self.collect_scores_impl(repo, start, since, now)
-    }
-
     /// Sort the score map according to user preference.
     fn sort_scores(&self, scores: HashMap<PathBuf, f64>) -> Vec<(PathBuf, f64)> {
         // Convert map into a sortable vector.
@@ -126,60 +115,6 @@ impl Analyzer {
             Ok(dur) => dur.as_secs() as i64,
             Err(_) => 0,
         }
-    }
-
-    /// Inspect a single commit and add its contributions to `scores`.
-    fn process_commit(
-        &self,
-        repo: &gix::Repository,
-        id: gix::ObjectId,
-        commit: &gix::Commit<'_>,
-        now: i64,
-        scores: &mut HashMap<PathBuf, f64>,
-        size_cache: &mut HashMap<gix::ObjectId, u64>,
-    ) -> Result<()> {
-        self.process_commit_impl(repo, id, commit, now, scores, size_cache)
-    }
-
-    /// Compute the age-based weight for a commit.
-    fn age_weight(&self, commit: &gix::Commit<'_>, now: i64) -> Result<f64> {
-        self.age_weight_impl(commit, now)
-    }
-
-    /// Iterate over all changes of a commit and update scores.
-    fn collect_changes(
-        &self,
-        changes: &mut gix::object::tree::diff::Platform<'_, '_>,
-        to: &gix::Tree<'_>,
-        weight: f64,
-        scores: &mut HashMap<PathBuf, f64>,
-        size_cache: &mut HashMap<gix::ObjectId, u64>,
-    ) -> Result<()> {
-        self.collect_changes_impl(changes, to, weight, scores, size_cache)
-    }
-
-    /// Convert a change into a path and blob size if it represents a file.
-    fn extract_change_info(
-        &self,
-        change: gix::object::tree::diff::Change<'_, '_, '_>,
-        size_cache: &mut HashMap<gix::ObjectId, u64>,
-    ) -> Option<(PathBuf, u64)> {
-        self.extract_change_info_impl(change, size_cache)
-    }
-
-    /// Check if the given path is included in the filter list.
-    fn path_allowed(&self, path: &PathBuf) -> bool {
-        self.path_allowed_impl(path)
-    }
-
-    /// Update the score for a single file path.
-    fn update_score(&self, scores: &mut HashMap<PathBuf, f64>, path: PathBuf, size: u64, weight: f64) {
-        self.update_score_impl(scores, path, size, weight)
-    }
-
-    /// Return the penalty for a blob of the given size.
-    fn size_penalty(&self, size: u64) -> f64 {
-        self.size_penalty_impl(size)
     }
 
     // Printing logic is implemented in `printer.rs` to keep this file focused on

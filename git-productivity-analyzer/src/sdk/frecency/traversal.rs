@@ -5,7 +5,7 @@ use miette::IntoDiagnostic;
 use std::{collections::HashMap, path::PathBuf};
 
 impl Analyzer {
-    pub(super) fn collect_scores_impl(
+    pub(super) fn collect_scores(
         &self,
         repo: &gix::Repository,
         start: gix::ObjectId,
@@ -20,14 +20,14 @@ impl Analyzer {
             if count >= limit {
                 return Ok(());
             }
-            self.process_commit_impl(repo, id, &commit, now, &mut scores, &mut size_cache)?;
+            self.process_commit(repo, id, &commit, now, &mut scores, &mut size_cache)?;
             count += 1;
             Ok(())
         })?;
         Ok(scores)
     }
 
-    pub(super) fn process_commit_impl(
+    pub(super) fn process_commit(
         &self,
         repo: &gix::Repository,
         id: gix::ObjectId,
@@ -45,11 +45,11 @@ impl Analyzer {
         let (from, to) = crate::sdk::diff::commit_trees(repo, id, parent);
         let mut changes = crate::sdk::diff::create_changes(&from)?;
         crate::sdk::diff::configure_changes(&mut changes);
-        let weight = self.age_weight_impl(commit, now)?;
-        self.collect_changes_impl(&mut changes, &to, weight, scores, size_cache)
+        let weight = self.age_weight(commit, now)?;
+        self.collect_changes(&mut changes, &to, weight, scores, size_cache)
     }
 
-    pub(super) fn collect_changes_impl(
+    pub(super) fn collect_changes(
         &self,
         changes: &mut gix::object::tree::diff::Platform<'_, '_>,
         to: &gix::Tree<'_>,
@@ -59,8 +59,8 @@ impl Analyzer {
     ) -> Result<()> {
         changes
             .for_each_to_obtain_tree(to, |change| {
-                if let Some((path, size)) = self.extract_change_info_impl(change, size_cache) {
-                    self.update_score_impl(scores, path, size, weight);
+                if let Some((path, size)) = self.extract_change_info(change, size_cache) {
+                    self.update_score(scores, path, size, weight);
                 }
                 Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue)
             })
@@ -68,7 +68,7 @@ impl Analyzer {
         Ok(())
     }
 
-    pub(super) fn extract_change_info_impl(
+    pub(super) fn extract_change_info(
         &self,
         change: gix::object::tree::diff::Change<'_, '_, '_>,
         size_cache: &mut HashMap<gix::ObjectId, u64>,
@@ -95,7 +95,7 @@ impl Analyzer {
         }
 
         let path = PathBuf::from(location.to_str_lossy().into_owned());
-        if !self.path_allowed_impl(&path) {
+        if !self.path_allowed(&path) {
             return None;
         }
 
