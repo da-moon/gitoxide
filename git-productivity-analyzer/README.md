@@ -42,8 +42,9 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--now <secs>` - evaluate frecency at this timestamp
   - `--age-exp <n>` - exponent for age weighting
   - `--size-ref <bytes>` - reference size for the file penalty
-  - `--path-only` - print only file paths
-  - merge commits are skipped when tallying file scores
+- `--path-only` - print only file paths
+- merge commits are skipped when tallying file scores
+ - when multiple files have the same score they are sorted alphabetically to keep output stable
 
 All commands accept the global options `--since <date>`, `--until <date>` and `--json` to limit the date range and control the output format.
 
@@ -79,3 +80,5 @@ The `--age-exp` and `--size-ref` flags allow tuning the decay rate and size pena
 Results are printed as a list of `{path, score}` objects when `--json` is used,
 while merge commits are ignored entirely. Sorting the output reveals hotspots
 that changed often in the analyzed range.
+Entries with identical scores are ordered alphabetically so results are
+stable across runs.
