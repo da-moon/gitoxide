@@ -9,6 +9,7 @@ mod helpers;
 pub mod hours;
 mod revision;
 pub mod stats;
+pub mod streaks;
 pub mod time_of_day;
 
 pub use helpers::{print_json_or, run_with_analyzer, AnalyzerTrait, IntoAnalyzer};

@@ -18,6 +18,10 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
   - `--author <pattern>` - filter commits by author
+- `streaks` — longest consecutive days with a commit per author.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+  - `--author <pattern>` - filter commits by author
 - `time-of-day` — show a histogram of commit times across a 24h day.
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
@@ -63,6 +67,7 @@ The implementation is based on `gitoxide-core::hours::estimate_hours()` which gr
 
 Commit frequency helps gauge how busy contributors are and how engaged they remain over time. Regular commits across many days indicate an active developer whereas sparse contributions may show less involvement. Weekly totals can highlight periods of intense activity or lulls.
 Analyzing the commit time of day reveals when individuals typically work, helping to infer personal or team schedules and preferred collaboration windows.
+Streak lengths show how consistently someone contributes. Very long streaks may indicate dedication but could also hint at burnout risk when breaks are rare.
 
 ## Code Churn & Refactoring Insight
 

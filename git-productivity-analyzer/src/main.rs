@@ -79,5 +79,6 @@ async fn main() -> Result<()> {
         cmd::Command::CommitSize(args) => cmd::commit_size::run(args, &globals).await,
         cmd::Command::Frecency(args) => cmd::frecency::run(args, &globals).await,
         cmd::Command::Ownership(args) => cmd::ownership::run(args, &globals).await,
+        cmd::Command::Streaks(args) => cmd::streaks::run(args, &globals).await,
     }
 }

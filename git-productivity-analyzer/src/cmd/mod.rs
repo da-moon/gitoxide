@@ -5,6 +5,7 @@ pub mod common;
 pub mod frecency;
 pub mod hours;
 pub mod ownership;
+pub mod streaks;
 pub mod time_of_day;
 
 use clap::Subcommand;
@@ -25,4 +26,6 @@ pub enum Command {
     Frecency(frecency::Args),
     #[command(about = "Summarize code ownership by directory")]
     Ownership(ownership::Args),
+    #[command(about = "Longest consecutive commit day streaks")]
+    Streaks(streaks::Args),
 }
