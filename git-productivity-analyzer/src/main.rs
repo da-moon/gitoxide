@@ -7,7 +7,6 @@ mod util;
 
 use crate::error::Result;
 use clap::ValueEnum;
-use env_logger;
 use log::LevelFilter;
 
 /// Shared options available to all subcommands.

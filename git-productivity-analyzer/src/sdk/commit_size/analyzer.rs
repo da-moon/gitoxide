@@ -80,9 +80,7 @@ impl Analyzer {
         } else {
             files.iter().copied().map(f64::from).sum::<f64>() / files.len() as f64
         };
-        let mut files_sorted = files.clone();
-        files_sorted.sort_unstable();
-        let median_files = median(&files_sorted);
+        let median_files = median(&files);
         let min_lines = lines.iter().copied().min().unwrap_or(0);
         let max_lines = lines.iter().copied().max().unwrap_or(0);
         let avg_lines = if lines.is_empty() {
@@ -90,9 +88,7 @@ impl Analyzer {
         } else {
             lines.iter().copied().map(f64::from).sum::<f64>() / lines.len() as f64
         };
-        let mut lines_sorted = lines.clone();
-        lines_sorted.sort_unstable();
-        let median_lines = median(&lines_sorted);
+        let median_lines = median(&lines);
         let line_percentiles = if lines.is_empty() {
             None
         } else {
