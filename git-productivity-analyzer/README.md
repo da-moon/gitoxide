@@ -129,5 +129,5 @@ Configure `RUST_LOG` or the `--log-level` flag to control their visibility.
 
 ## Code Ownership
 
-`ownership` shows what percentage of commits each contributor made per top-level folder.
+`ownership` shows what percentage of commits each contributor made per top-level folder. Files in the repository root are grouped under the `.` directory.
 This helps identify experts for specific modules and highlights areas with a high bus factor.

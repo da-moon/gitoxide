@@ -16,6 +16,9 @@ snapshot="$SCRIPT_DIR/snapshots/code-ownership"
       git config commit.gpgsign false &&
       git config tag.gpgsign false &&
       mkdir src docs &&
+      echo root > README && git add README && \
+      GIT_AUTHOR_NAME="Alice" GIT_AUTHOR_EMAIL=a@example.com \
+      GIT_COMMITTER_NAME="Alice" GIT_COMMITTER_EMAIL=a@example.com git commit -m root &&
       echo a > src/a && git add src/a && \
       GIT_AUTHOR_NAME="Alice" GIT_AUTHOR_EMAIL=a@example.com \
       GIT_COMMITTER_NAME="Alice" GIT_COMMITTER_EMAIL=a@example.com git commit -m init &&

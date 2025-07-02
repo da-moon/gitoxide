@@ -58,20 +58,25 @@ impl Analyzer {
         changes
             .for_each_to_obtain_tree(&to, |change| {
                 use gix::object::tree::diff::Change::*;
-                let location = match change {
-                    Addition { location, .. }
-                    | Deletion { location, .. }
-                    | Modification { location, .. } => location,
-                    Rewrite { location, .. } => location,
+                let (location, mode) = match change {
+                    Addition { location, entry_mode, .. } => (location, entry_mode),
+                    Deletion { location, entry_mode, .. } => (location, entry_mode),
+                    Modification { location, entry_mode, .. } => (location, entry_mode),
+                    Rewrite { location, entry_mode, .. } => (location, entry_mode),
                 };
+                if mode.is_tree() {
+                    return Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue);
+                }
                 let path = location.to_str_lossy();
                 if let Some(pat) = pattern {
                     if !pat.matches(&path) {
                         return Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue);
                     }
                 }
-                let dir = path.split('/').next().unwrap_or("");
-                let dir = if dir.is_empty() { "." } else { dir };
+                let dir = match path.find('/') {
+                    Some(idx) if idx > 0 => &path[..idx],
+                    _ => ".",
+                };
                 dirs.insert(dir.to_string());
                 Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue)
             })
