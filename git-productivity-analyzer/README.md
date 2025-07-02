@@ -216,4 +216,6 @@ cargo test-short -p git-productivity-analyzer
 The `test-short` and `check-short` commands are convenience aliases defined in
 `.cargo/config.toml` to run `cargo test --message-format short` and
 `cargo check --message-format short` respectively.
+You can run `cargo check-short -p git-productivity-analyzer` for a quick build
+check without executing tests.
 
