@@ -59,6 +59,72 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
 
 All commands accept the global options `--since <date>`, `--until <date>`, `--json`, and `--log-level <level>` to limit the date range, choose output format, and control verbosity.
 
+## Usage Examples
+
+### hours
+
+```bash
+git-productivity-analyzer hours --working-dir path/to/repo
+```
+
+Totals show estimated hours and approximate work days based on commit spacing.
+
+### commit-frequency
+
+```bash
+git-productivity-analyzer commit-frequency --working-dir path/to/repo
+```
+
+Counts commits per day and week to gauge sustained engagement.
+
+### streaks
+
+```bash
+git-productivity-analyzer streaks --working-dir path/to/repo --author Alice
+```
+
+Reports the longest span of consecutive commit days for each author.
+
+### time-of-day
+
+```bash
+git-productivity-analyzer time-of-day --working-dir path/to/repo --bins 12
+```
+
+Builds a histogram of commit times to reveal typical working hours.
+
+### churn
+
+```bash
+git-productivity-analyzer churn --working-dir path/to/repo --per-file
+```
+
+Summarizes lines added and removed which can highlight refactoring activity.
+
+### commit-size
+
+```bash
+git-productivity-analyzer commit-size --working-dir path/to/repo --percentiles 50,90
+```
+
+Shows how many files and lines change per commit. Large outliers may need more review.
+
+### frecency
+
+```bash
+git-productivity-analyzer frecency --working-dir path/to/repo --path-only
+```
+
+Ranks files by a score that favors recent and frequent changes.
+
+### ownership
+
+```bash
+git-productivity-analyzer ownership --working-dir path/to/repo --depth 1
+```
+
+Displays commit percentages per directory to identify subject matter experts.
+
 ## Time Estimation Algorithm
 
 The implementation is based on `gitoxide-core::hours::estimate_hours()` which groups commits by author and time. Commits spaced less than two hours apart are considered part of the same working session. Each session starts with an initial two hour bonus to cover context switching. Optionally the diff of each commit can be examined to track files and lines changed. Identities are unified via `.mailmap` and GitHub bots can be ignored.
@@ -138,3 +204,12 @@ Configure `RUST_LOG` or the `--log-level` flag to control their visibility.
 `ownership` shows what percentage of commits each contributor made per directory. The `--depth` option controls how many path segments are used when grouping files. Using `--depth 0` groups all files together. Files in the repository root are always grouped under the `.` directory.
 Merge commits are compared against their first parent only. Changes are counted per file and aggregated by directory. Authors are sorted by descending percentage with alphabetical ordering used to break ties.
 This helps identify experts for specific modules and highlights areas with a high bus factor.
+
+## Running Tests
+
+Execute all end-to-end checks with:
+
+```bash
+cargo test-short -p git-productivity-analyzer
+```
+
