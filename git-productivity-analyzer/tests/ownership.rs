@@ -3,15 +3,11 @@ use std::fs::{self, File};
 use std::process::Command;
 use tempfile::TempDir;
 
+mod util;
+
 fn init_repo() -> TempDir {
-    let dir = TempDir::new().unwrap();
+    let dir = util::init_repo();
     let repo = dir.path();
-    Command::new("git").arg("init").current_dir(repo).output().unwrap();
-    Command::new("git")
-        .args(["config", "commit.gpgsign", "false"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
     fs::create_dir(repo.join("src")).unwrap();
     fs::create_dir(repo.join("docs")).unwrap();
     File::create(repo.join("README")).unwrap();
@@ -96,5 +92,9 @@ fn ownership_json() {
         .args(["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert!(v.is_object());
+    for (_dir, authors) in v.as_object().unwrap() {
+        assert!(authors.is_object());
+    }
 }

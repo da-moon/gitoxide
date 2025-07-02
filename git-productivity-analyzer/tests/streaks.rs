@@ -4,15 +4,11 @@ use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
 
+mod util;
+
 fn init_repo() -> TempDir {
-    let dir = TempDir::new().unwrap();
+    let dir = util::init_repo();
     let repo = dir.path();
-    Command::new("git").arg("init").current_dir(repo).output().unwrap();
-    Command::new("git")
-        .args(["config", "commit.gpgsign", "false"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
     let commits = [
         ("Alice", "a@example.com", "2020-01-01T00:00:00 +0000"),
         ("Alice", "a@example.com", "2020-01-02T00:00:00 +0000"),

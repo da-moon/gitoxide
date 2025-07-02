@@ -4,15 +4,11 @@ use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
 
+mod util;
+
 fn init_repo() -> TempDir {
-    let dir = TempDir::new().unwrap();
+    let dir = util::init_repo();
     let repo = dir.path();
-    Command::new("git").arg("init").current_dir(repo).output().unwrap();
-    Command::new("git")
-        .args(["config", "commit.gpgsign", "false"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
     let authors = [
         ("Sebastian Thiel", "a@example.com"),
         ("Eliah Kagan", "b@example.com"),
@@ -75,4 +71,21 @@ fn author_filter() {
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Sebastian"));
     assert!(!out.contains("Eliah"));
+}
+
+#[test]
+fn author_filter_no_matches() {
+    let dir = init_repo();
+    let output = Command::new(bin())
+        .args([
+            "commit-frequency",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--author",
+            "Nonexistent",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.trim().is_empty() || out.contains("no results") || out.contains("No commits"));
 }

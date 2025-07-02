@@ -4,15 +4,11 @@ use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
 
+mod util;
+
 fn init_repo() -> TempDir {
-    let dir = TempDir::new().unwrap();
+    let dir = util::init_repo();
     let repo = dir.path();
-    Command::new("git").arg("init").current_dir(repo).output().unwrap();
-    Command::new("git")
-        .args(["config", "commit.gpgsign", "false"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
     for i in 1..=3 {
         let mut f = File::create(repo.join(format!("f{i}"))).unwrap();
         for _ in 0..i {
@@ -24,7 +20,15 @@ fn init_repo() -> TempDir {
             .output()
             .unwrap();
         Command::new("git")
-            .args(["commit", "-m", &format!("c{i}")])
+            .args([
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "commit",
+                "-m",
+                &format!("c{i}"),
+            ])
             .current_dir(repo)
             .output()
             .unwrap();
@@ -61,5 +65,6 @@ fn percentiles() {
         .output()
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert!(v.get("line_percentiles").is_some());
+    let expected = serde_json::json!([[50.0, 2], [100.0, 3]]);
+    assert_eq!(v.get("line_percentiles").unwrap(), &expected);
 }
