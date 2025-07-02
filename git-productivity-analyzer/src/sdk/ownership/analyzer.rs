@@ -1,15 +1,17 @@
+use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{error::Result, Globals};
+use gix::bstr::ByteSlice;
 use glob::Pattern;
 use miette::IntoDiagnostic;
-use gix::bstr::ByteSlice;
 
 #[derive(Clone)]
 pub struct Options {
     pub repo: crate::sdk::RepoOptions,
     pub path: Option<String>,
     pub author: Option<String>,
+    pub depth: usize,
 }
 
 #[derive(Clone)]
@@ -59,10 +61,18 @@ impl Analyzer {
             .for_each_to_obtain_tree(&to, |change| {
                 use gix::object::tree::diff::Change::*;
                 let (location, mode) = match change {
-                    Addition { location, entry_mode, .. } => (location, entry_mode),
-                    Deletion { location, entry_mode, .. } => (location, entry_mode),
-                    Modification { location, entry_mode, .. } => (location, entry_mode),
-                    Rewrite { location, entry_mode, .. } => (location, entry_mode),
+                    Addition {
+                        location, entry_mode, ..
+                    } => (location, entry_mode),
+                    Deletion {
+                        location, entry_mode, ..
+                    } => (location, entry_mode),
+                    Modification {
+                        location, entry_mode, ..
+                    } => (location, entry_mode),
+                    Rewrite {
+                        location, entry_mode, ..
+                    } => (location, entry_mode),
                 };
                 if mode.is_tree() {
                     return Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue);
@@ -73,11 +83,12 @@ impl Analyzer {
                         return Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue);
                     }
                 }
-                let dir = match path.find('/') {
-                    Some(idx) if idx > 0 => &path[..idx],
-                    _ => ".",
+                let dir = if !path.contains('/') {
+                    ".".to_string()
+                } else {
+                    path.split('/').take(self.opts.depth).collect::<Vec<_>>().join("/")
                 };
-                dirs.insert(dir.to_string());
+                dirs.insert(dir);
                 Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue)
             })
             .into_diagnostic()?;
@@ -93,8 +104,10 @@ impl Analyzer {
             for (dir, counts) in totals {
                 let total: u32 = counts.values().sum();
                 print!("{dir}: ");
+                let mut pairs: Vec<_> = counts.iter().collect();
+                pairs.sort_by_key(|(_, count)| Reverse(**count));
                 let mut parts = Vec::new();
-                for (author, count) in counts {
+                for (author, count) in pairs {
                     let pct = (*count as f64) * 100.0 / total as f64;
                     parts.push(format!("{author} {:.0}%", pct));
                 }

@@ -11,6 +11,13 @@ pub struct Args {
 
     #[arg(long, help = "Only count commits whose author matches this pattern.")]
     pub author: Option<String>,
+
+    #[arg(
+        long,
+        default_value_t = 1,
+        help = "Number of path segments to group by when summarizing ownership."
+    )]
+    pub depth: usize,
 }
 
-crate::impl_from_args!(Args, crate::sdk::ownership::Options { path, author });
+crate::impl_from_args!(Args, crate::sdk::ownership::Options { path, author, depth });

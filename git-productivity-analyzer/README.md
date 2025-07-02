@@ -48,8 +48,9 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
 - `ownership` — summarize code ownership by directory.
   - `--working-dir` - path to the repository
   - `--rev-spec` - revision to analyze
-  - `--path <glob>` - only consider paths matching this pattern
-  - `--author <pattern>` - filter commits by author
+- `--path <glob>` - only consider paths matching this pattern
+- `--author <pattern>` - filter commits by author
+  - `--depth <n>` - number of path segments to group by
   - `--json` - machine readable output
 
 All commands accept the global options `--since <date>`, `--until <date>`, `--json`, and `--log-level <level>` to limit the date range, choose output format, and control verbosity.
@@ -129,5 +130,5 @@ Configure `RUST_LOG` or the `--log-level` flag to control their visibility.
 
 ## Code Ownership
 
-`ownership` shows what percentage of commits each contributor made per top-level folder. Files in the repository root are grouped under the `.` directory.
+`ownership` shows what percentage of commits each contributor made per directory. The `--depth` option controls how many path segments are used when grouping files. Files in the repository root are always grouped under the `.` directory.
 This helps identify experts for specific modules and highlights areas with a high bus factor.

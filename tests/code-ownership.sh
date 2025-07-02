@@ -38,5 +38,13 @@ snapshot="$SCRIPT_DIR/snapshots/code-ownership"
       WITH_SNAPSHOT="$snapshot/json" \
       expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- --json ownership --working-dir \"$PWD\" 2>/dev/null)"
     }
+    it "filters by path" && {
+      WITH_SNAPSHOT="$snapshot/path" \
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- ownership --working-dir \"$PWD\" --path 'src/*' 2>/dev/null)"
+    }
+    it "filters by author" && {
+      WITH_SNAPSHOT="$snapshot/author" \
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- ownership --working-dir \"$PWD\" --author Alice 2>/dev/null)"
+    }
   )
 )
