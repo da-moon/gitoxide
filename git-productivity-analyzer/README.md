@@ -131,4 +131,5 @@ Configure `RUST_LOG` or the `--log-level` flag to control their visibility.
 ## Code Ownership
 
 `ownership` shows what percentage of commits each contributor made per directory. The `--depth` option controls how many path segments are used when grouping files. Files in the repository root are always grouped under the `.` directory.
+Merge commits are compared against their first parent only. Changes are counted per file and aggregated by directory. Authors are sorted by descending percentage with alphabetical ordering used to break ties.
 This helps identify experts for specific modules and highlights areas with a high bus factor.

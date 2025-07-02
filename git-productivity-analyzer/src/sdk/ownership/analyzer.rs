@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use crate::{error::Result, Globals};
 use gix::bstr::ByteSlice;
@@ -52,11 +52,12 @@ impl Analyzer {
         author: &str,
         totals: &mut Totals,
     ) -> Result<()> {
+        // Only the first parent of merge commits is considered when computing
+        // diffs to keep results deterministic.
         let parent = commit.parent_ids().next().map(|p| p.detach());
         let (from, to) = crate::sdk::diff::commit_trees(repo, id, parent);
         let mut changes = crate::sdk::diff::create_changes(&from)?;
         crate::sdk::diff::configure_changes(&mut changes);
-        let mut dirs = BTreeSet::new();
         changes
             .for_each_to_obtain_tree(&to, |change| {
                 use gix::object::tree::diff::Change::*;
@@ -83,19 +84,17 @@ impl Analyzer {
                         return Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue);
                     }
                 }
+                let depth = self.opts.depth.max(1);
                 let dir = if !path.contains('/') {
                     ".".to_string()
                 } else {
-                    path.split('/').take(self.opts.depth).collect::<Vec<_>>().join("/")
+                    path.split('/').take(depth).collect::<Vec<_>>().join("/")
                 };
-                dirs.insert(dir);
+                let by_author = totals.entry(dir).or_default();
+                *by_author.entry(author.to_string()).or_default() += 1;
                 Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue)
             })
             .into_diagnostic()?;
-        for dir in dirs {
-            let by_author = totals.entry(dir).or_default();
-            *by_author.entry(author.to_string()).or_default() += 1;
-        }
         Ok(())
     }
 
@@ -104,11 +103,19 @@ impl Analyzer {
             for (dir, counts) in totals {
                 let total: u32 = counts.values().sum();
                 print!("{dir}: ");
+                if total == 0 {
+                    println!();
+                    continue;
+                }
                 let mut pairs: Vec<_> = counts.iter().collect();
-                pairs.sort_by_key(|(_, count)| Reverse(**count));
+                pairs.sort_by(|(a, ac), (b, bc)| bc.cmp(ac).then_with(|| a.cmp(b)));
                 let mut parts = Vec::new();
                 for (author, count) in pairs {
-                    let pct = (*count as f64) * 100.0 / total as f64;
+                    let pct = if total == 0 {
+                        0.0
+                    } else {
+                        (*count as f64) * 100.0 / total as f64
+                    };
                     parts.push(format!("{author} {:.0}%", pct));
                 }
                 println!("{}", parts.join(" "));
@@ -127,7 +134,12 @@ impl From<&Totals> for SerializableTotals {
             let total: u32 = counts.values().sum();
             let mut percents = BTreeMap::new();
             for (author, count) in counts {
-                percents.insert(author.clone(), (*count as f64) * 100.0 / total as f64);
+                let pct = if total == 0 {
+                    0.0
+                } else {
+                    (*count as f64) * 100.0 / total as f64
+                };
+                percents.insert(author.clone(), pct);
             }
             out.insert(dir.clone(), percents);
         }
