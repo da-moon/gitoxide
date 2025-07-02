@@ -93,8 +93,10 @@ fn ownership_json() {
         .output()
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert!(v.is_object());
-    for (_dir, authors) in v.as_object().unwrap() {
-        assert!(authors.is_object());
-    }
+    let obj = v.as_object().expect("top-level JSON object");
+    assert!(obj.contains_key("."));
+    assert!(obj.contains_key("src"));
+    assert!(obj.contains_key("docs"));
+    let src = obj.get("src").unwrap().as_object().unwrap();
+    assert!(src.contains_key("Alice <a@example.com>"));
 }

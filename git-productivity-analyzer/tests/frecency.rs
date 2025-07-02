@@ -158,8 +158,10 @@ fn path_only() {
         .output()
         .unwrap();
     let text = String::from_utf8_lossy(&output.stdout);
-    // output should only contain file names without scores
-    assert!(text.lines().all(|l| !l.contains(' ')));
+    // each line should contain exactly one whitespace-separated field
+    for line in text.lines() {
+        assert_eq!(line.split_whitespace().count(), 1);
+    }
 }
 
 #[test]

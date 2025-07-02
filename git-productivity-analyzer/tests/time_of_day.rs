@@ -67,7 +67,7 @@ fn author_filter() {
             "--working-dir",
             dir.path().to_str().unwrap(),
             "--author",
-            "A",
+            "a@example.com",
         ])
         .output()
         .unwrap();
@@ -75,4 +75,10 @@ fn author_filter() {
     let lines: Vec<_> = out.lines().collect();
     assert_eq!(lines.len(), 24);
     assert!(lines.iter().any(|l| l.starts_with("00-00") && l.ends_with("1")));
+    let total: u32 = lines
+        .iter()
+        .filter_map(|l| l.split_whitespace().nth(1))
+        .filter_map(|v| v.parse::<u32>().ok())
+        .sum();
+    assert_eq!(total, 1);
 }
