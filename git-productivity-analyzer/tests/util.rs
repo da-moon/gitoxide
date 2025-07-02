@@ -1,5 +1,34 @@
+use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
+
+fn git(repo: &Path, args: &[&str]) {
+    Command::new("git").args(args).current_dir(repo).output().unwrap();
+}
+
+fn git_env(repo: &Path, args: &[&str], env: &[(&str, &str)]) {
+    let mut cmd = Command::new("git");
+    cmd.args(args).current_dir(repo);
+    for (key, value) in env {
+        cmd.env(key, value);
+    }
+    cmd.output().unwrap();
+}
+
+fn config_user(repo: &Path, name: &str, email: &str) {
+    git(repo, &["config", "user.name", name]);
+    git(repo, &["config", "user.email", email]);
+}
+
+fn commit_file(repo: &Path, path: &str, content: &str, msg: &str, date: &str) {
+    std::fs::write(repo.join(path), content).unwrap();
+    git(repo, &["add", path]);
+    git_env(
+        repo,
+        &["commit", "-m", msg, "--date", date],
+        &[("GIT_AUTHOR_DATE", date), ("GIT_COMMITTER_DATE", date)],
+    );
+}
 
 pub fn init_repo() -> TempDir {
     let dir = TempDir::new().unwrap();
@@ -16,79 +45,19 @@ pub fn init_repo() -> TempDir {
 pub fn init_repo_with_merge() -> TempDir {
     let dir = init_repo();
     let repo = dir.path();
-    Command::new("git")
-        .args(["config", "user.name", "Tester"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-    Command::new("git")
-        .args(["config", "user.email", "tester@example.com"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-
-    let date1 = "2020-01-01T00:00:00 +0000";
-    std::fs::write(repo.join("file0.txt"), "0").unwrap();
-    Command::new("git")
-        .args(["add", "file0.txt"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-    Command::new("git")
-        .args(["commit", "-m", "c0", "--date", date1])
-        .env("GIT_AUTHOR_DATE", date1)
-        .env("GIT_COMMITTER_DATE", date1)
-        .current_dir(repo)
-        .output()
-        .unwrap();
-
-    Command::new("git")
-        .args(["checkout", "-b", "feature"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-    let date_feature = "2020-01-03T00:00:00 +0000";
-    std::fs::write(repo.join("file2.txt"), "2").unwrap();
-    Command::new("git")
-        .args(["add", "file2.txt"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-    Command::new("git")
-        .args(["commit", "-m", "feature", "--date", date_feature])
-        .env("GIT_AUTHOR_DATE", date_feature)
-        .env("GIT_COMMITTER_DATE", date_feature)
-        .current_dir(repo)
-        .output()
-        .unwrap();
-
-    Command::new("git")
-        .args(["checkout", "-"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-    let date_main = "2020-01-02T00:00:00 +0000";
-    std::fs::write(repo.join("file1.txt"), "1").unwrap();
-    Command::new("git")
-        .args(["add", "file1.txt"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
-    Command::new("git")
-        .args(["commit", "-m", "main", "--date", date_main])
-        .env("GIT_AUTHOR_DATE", date_main)
-        .env("GIT_COMMITTER_DATE", date_main)
-        .current_dir(repo)
-        .output()
-        .unwrap();
-
-    Command::new("git")
-        .args(["merge", "feature", "--no-ff", "-m", "merge"])
-        .env("GIT_AUTHOR_DATE", "2020-01-04T00:00:00 +0000")
-        .env("GIT_COMMITTER_DATE", "2020-01-04T00:00:00 +0000")
-        .current_dir(repo)
-        .output()
-        .unwrap();
-
+    config_user(repo, "Tester", "tester@example.com");
+    commit_file(repo, "file0.txt", "0", "c0", "2020-01-01T00:00:00 +0000");
+    git(repo, &["checkout", "-b", "feature"]);
+    commit_file(repo, "file2.txt", "2", "feature", "2020-01-03T00:00:00 +0000");
+    git(repo, &["checkout", "-"]);
+    commit_file(repo, "file1.txt", "1", "main", "2020-01-02T00:00:00 +0000");
+    git_env(
+        repo,
+        &["merge", "feature", "--no-ff", "-m", "merge"],
+        &[
+            ("GIT_AUTHOR_DATE", "2020-01-04T00:00:00 +0000"),
+            ("GIT_COMMITTER_DATE", "2020-01-04T00:00:00 +0000"),
+        ],
+    );
     dir
 }
