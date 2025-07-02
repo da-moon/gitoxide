@@ -87,6 +87,25 @@ When the `--json` flag is used the output looks like this:
 }
 ```
 
+When percentiles are requested as well:
+
+```json
+{
+  "min_files": 1,
+  "max_files": 1,
+  "avg_files": 1.0,
+  "median_files": 1.0,
+  "min_lines": 1,
+  "max_lines": 3,
+  "avg_lines": 2.0,
+  "median_lines": 2.0,
+  "line_percentiles": [
+    [50.0, 2],
+    [100.0, 3]
+  ]
+}
+```
+
 ## File Frecency
 
 `frecency` ranks files by combining the age of commits touching them with the
