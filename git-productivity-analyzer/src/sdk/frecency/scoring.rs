@@ -14,7 +14,10 @@ impl Analyzer {
 
     /// Check if the given path is included in the filter list.
     pub(super) fn path_allowed(&self, path: &PathBuf) -> bool {
-        self.opts.paths.as_ref().map_or(true, |paths| paths.contains(path))
+        match &self.opts.paths {
+            Some(paths) => paths.contains(path),
+            None => true,
+        }
     }
 
     /// Update the score for a single file path.
