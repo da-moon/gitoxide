@@ -49,6 +49,13 @@ It relies on `gitoxide-core` for heavy lifting and focuses on summarizing how mu
 - `--path-only` - print only file paths
 - merge commits are skipped when tallying file scores
  - when multiple files have the same score they are sorted alphabetically to keep output stable
+- `ownership` — summarize code ownership by directory.
+  - `--working-dir` - path to the repository
+  - `--rev-spec` - revision to analyze
+- `--path <glob>` - only consider paths matching this pattern
+- `--author <pattern>` - filter commits by author
+  - `--depth <n>` - number of path segments to group by
+  - `--json` - machine readable output
 
 All commands accept the global options `--since <date>`, `--until <date>`, `--json`, and `--log-level <level>` to limit the date range, choose output format, and control verbosity.
 
@@ -125,3 +132,9 @@ Entries with identical scores are ordered alphabetically so results are
 stable across runs.
 Warnings encountered during analysis are emitted using the `log` crate.
 Configure `RUST_LOG` or the `--log-level` flag to control their visibility.
+
+## Code Ownership
+
+`ownership` shows what percentage of commits each contributor made per directory. The `--depth` option controls how many path segments are used when grouping files. Using `--depth 0` groups all files together. Files in the repository root are always grouped under the `.` directory.
+Merge commits are compared against their first parent only. Changes are counted per file and aggregated by directory. Authors are sorted by descending percentage with alphabetical ordering used to break ties.
+This helps identify experts for specific modules and highlights areas with a high bus factor.
