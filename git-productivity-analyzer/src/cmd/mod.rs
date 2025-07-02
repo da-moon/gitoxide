@@ -4,6 +4,7 @@ pub mod commit_size;
 pub mod common;
 pub mod frecency;
 pub mod hours;
+pub mod ownership;
 pub mod time_of_day;
 
 use clap::Subcommand;
@@ -22,4 +23,6 @@ pub enum Command {
     CommitSize(commit_size::Args),
     #[command(about = "Score files by recent change frequency")]
     Frecency(frecency::Args),
+    #[command(about = "Summarize code ownership by directory")]
+    Ownership(ownership::Args),
 }

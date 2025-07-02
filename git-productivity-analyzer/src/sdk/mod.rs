@@ -4,6 +4,7 @@ pub mod commit_size;
 mod common;
 pub mod diff;
 pub mod frecency;
+pub mod ownership;
 mod helpers;
 pub mod hours;
 mod revision;
