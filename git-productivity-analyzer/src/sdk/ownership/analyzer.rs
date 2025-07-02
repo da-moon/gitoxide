@@ -1,4 +1,3 @@
-use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
 use crate::{error::Result, Globals};
@@ -52,8 +51,8 @@ impl Analyzer {
         author: &str,
         totals: &mut Totals,
     ) -> Result<()> {
-        // Only the first parent of merge commits is considered when computing
-        // diffs to keep results deterministic.
+        // Compare merge commits against their first parent only to
+        // avoid double-counting changes from multiple branches.
         let parent = commit.parent_ids().next().map(|p| p.detach());
         let (from, to) = crate::sdk::diff::commit_trees(repo, id, parent);
         let mut changes = crate::sdk::diff::create_changes(&from)?;
@@ -84,8 +83,8 @@ impl Analyzer {
                         return Ok::<_, std::convert::Infallible>(gix::object::tree::diff::Action::Continue);
                     }
                 }
-                let depth = self.opts.depth.max(1);
-                let dir = if !path.contains('/') {
+                let depth = self.opts.depth;
+                let dir = if depth == 0 || !path.contains('/') {
                     ".".to_string()
                 } else {
                     path.split('/').take(depth).collect::<Vec<_>>().join("/")

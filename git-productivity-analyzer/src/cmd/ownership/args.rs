@@ -15,7 +15,7 @@ pub struct Args {
     #[arg(
         long,
         default_value_t = 1,
-        help = "Number of path segments to group by when summarizing ownership."
+        help = "Number of path segments to group by when summarizing ownership.\nUse 0 to group all files together."
     )]
     pub depth: usize,
 }

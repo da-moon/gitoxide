@@ -49,6 +49,30 @@ snapshot="$SCRIPT_DIR/snapshots/code-ownership"
   )
 )
 
+(title "code-ownership-depth-zero" && \
+  repo_root="$PWD" && \
+  (
+    sandbox && (
+      git init &&
+      git checkout -b main &&
+      git config commit.gpgsign false &&
+      git config tag.gpgsign false &&
+      mkdir one two &&
+      echo x > one/a && git add one/a && \
+      GIT_AUTHOR_NAME="Alice" GIT_AUTHOR_EMAIL=a@example.com \
+      GIT_COMMITTER_NAME="Alice" GIT_COMMITTER_EMAIL=a@example.com git commit -m one &&
+      echo y > two/b && git add two/b && \
+      GIT_AUTHOR_NAME="Bob" GIT_AUTHOR_EMAIL=b@example.com \
+      GIT_COMMITTER_NAME="Bob" GIT_COMMITTER_EMAIL=b@example.com git commit -m two
+    )
+    export REPO_ROOT="$repo_root"
+    it "groups everything when depth is zero" && {
+      WITH_SNAPSHOT="$snapshot/depth-zero" \
+      expect_run_sh $SUCCESSFULLY "(cd \"$REPO_ROOT\" && cargo run-short -p git-productivity-analyzer -- ownership --working-dir \"$PWD\" --depth 0 2>/dev/null)"
+    }
+  )
+)
+
 (title "code-ownership-root-only" && \
   repo_root="$PWD" && \
   (
