@@ -4,15 +4,11 @@ use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
 
+mod util;
+
 fn init_repo() -> TempDir {
-    let dir = TempDir::new().unwrap();
+    let dir = util::init_repo();
     let repo = dir.path();
-    Command::new("git").arg("init").current_dir(repo).output().unwrap();
-    Command::new("git")
-        .args(["config", "commit.gpgsign", "false"])
-        .current_dir(repo)
-        .output()
-        .unwrap();
     let commits = [
         ("A", "2020-01-01T00:00:00 +0000"),
         ("B", "2020-01-01T12:00:00 +0000"),
@@ -76,5 +72,7 @@ fn author_filter() {
         .output()
         .unwrap();
     let out = String::from_utf8_lossy(&output.stdout);
-    assert!(!out.is_empty());
+    let lines: Vec<_> = out.lines().collect();
+    assert_eq!(lines.len(), 24);
+    assert!(lines.iter().any(|l| l.starts_with("00-00") && l.ends_with("1")));
 }
