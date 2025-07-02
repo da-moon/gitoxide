@@ -72,6 +72,21 @@ reduces the chances of bugs slipping through. The `commit-size` command
 summarizes how much code changes per commit so you can gauge the typical review
 burden and spot unusually large commits.
 
+When the `--json` flag is used the output looks like this:
+
+```json
+{
+  "min_files": 1,
+  "max_files": 1,
+  "avg_files": 1.0,
+  "median_files": 1.0,
+  "min_lines": 1,
+  "max_lines": 3,
+  "avg_lines": 2.0,
+  "median_lines": 2.0
+}
+```
+
 ## File Frecency
 
 `frecency` ranks files by combining the age of commits touching them with the

@@ -1,4 +1,5 @@
 use crate::sdk::diff::{commit_trees, configure_changes, create_changes};
+use crate::sdk::stats::{median, percentile_of_sorted};
 use crate::{error::Result, Globals};
 use miette::IntoDiagnostic;
 use serde::Serialize;
@@ -132,36 +133,6 @@ impl Analyzer {
             }
         });
     }
-}
-
-fn median(values: &[u32]) -> f64 {
-    if values.is_empty() {
-        return 0.0;
-    }
-    let mid = values.len() / 2;
-    if values.len() % 2 == 1 {
-        values[mid] as f64
-    } else {
-        (values[mid - 1] + values[mid]) as f64 / 2.0
-    }
-}
-
-fn percentile_of_sorted(values: &[u32], pct: f64) -> Option<u32> {
-    if values.is_empty() {
-        return None;
-    }
-    assert!((0.0..=100.0).contains(&pct));
-    if (pct - 100.0).abs() < f64::EPSILON || values.len() == 1 {
-        return Some(values.last().copied().unwrap_or_default());
-    }
-    let length = (values.len() - 1) as f64;
-    let rank = (pct / 100.0) * length;
-    let lower = rank.floor();
-    let d = rank - lower;
-    let n = lower as usize;
-    let lo = values[n] as f64;
-    let hi = values[n + 1] as f64;
-    Some((lo + (hi - lo) * d).round() as u32)
 }
 
 impl crate::sdk::AnalyzerTrait for Analyzer {
