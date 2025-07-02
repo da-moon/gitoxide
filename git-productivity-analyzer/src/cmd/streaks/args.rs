@@ -6,7 +6,10 @@ pub struct Args {
     #[command(flatten)]
     pub common: CommonArgs,
 
-    #[arg(long, help = "Only count commits whose author matches this pattern.")]
+    #[arg(
+        long,
+        help = "Only count commits whose author contains this substring (case-insensitive)."
+    )]
     pub author: Option<String>,
 }
 

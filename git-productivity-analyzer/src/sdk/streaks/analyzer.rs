@@ -4,7 +4,24 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::processor::process_commit;
 use crate::{error::Result, Globals};
 
-pub type Streaks = BTreeMap<String, u32>;
+#[derive(Clone, serde::Serialize)]
+pub struct Streaks(BTreeMap<String, u32>);
+
+impl From<BTreeMap<String, u32>> for Streaks {
+    fn from(map: BTreeMap<String, u32>) -> Self {
+        Self(map)
+    }
+}
+
+impl Streaks {
+    pub fn into_inner(self) -> BTreeMap<String, u32> {
+        self.0
+    }
+
+    pub fn as_map(&self) -> &BTreeMap<String, u32> {
+        &self.0
+    }
+}
 
 #[derive(Clone)]
 pub struct Options {
@@ -24,10 +41,11 @@ impl Analyzer {
         let mut days_by_author = BTreeMap::<String, BTreeSet<NaiveDate>>::new();
         self.walk_commits(&repo, start, since.as_ref(), &mut days_by_author)?;
 
-        Ok(days_by_author
+        let map: BTreeMap<_, _> = days_by_author
             .into_iter()
             .map(|(author, days)| (author, longest_streak(&days)))
-            .collect())
+            .collect();
+        Ok(map.into())
     }
 
     fn walk_commits(
@@ -43,8 +61,8 @@ impl Analyzer {
     }
 
     pub fn print_streaks(&self, streaks: &Streaks) {
-        crate::sdk::print_json_or(self.globals.json, &SerializableStreaks::from(streaks), || {
-            for (author, days) in streaks {
+        crate::sdk::print_json_or(self.globals.json, streaks, || {
+            for (author, days) in streaks.as_map() {
                 println!("{author}: {days}");
             }
         });
@@ -65,17 +83,6 @@ fn longest_streak(days: &BTreeSet<NaiveDate>) -> u32 {
         prev = Some(*day);
     }
     max
-}
-
-#[derive(serde::Serialize)]
-struct SerializableStreaks {
-    streaks: BTreeMap<String, u32>,
-}
-
-impl From<&Streaks> for SerializableStreaks {
-    fn from(map: &Streaks) -> Self {
-        Self { streaks: map.clone() }
-    }
 }
 
 crate::impl_analyzer_boilerplate!(Options, Analyzer);
