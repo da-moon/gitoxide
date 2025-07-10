@@ -13,11 +13,4 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-impl From<Args> for crate::sdk::streaks::Options {
-    fn from(a: Args) -> Self {
-        Self {
-            repo: a.common.into(),
-            author: a.author.map(|s| s.to_lowercase()),
-        }
-    }
-}
+crate::impl_from_args_author!(Args, crate::sdk::streaks::Options {});

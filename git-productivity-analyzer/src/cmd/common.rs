@@ -52,3 +52,33 @@ macro_rules! impl_from_args {
         }
     };
 }
+
+/// Like [`impl_from_args`] but automatically lower-cases the optional
+/// `author` field during conversion.
+#[macro_export]
+macro_rules! impl_from_args_author {
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    author: a.author.map(|s| s.to_lowercase()),
+                    $( $field: a.$field, )*
+                }
+            }
+        }
+    };
+
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    author: a.author.map(|s| s.to_lowercase()),
+                    $( $field: a.$field, )*
+                    $( $dest: a.$src, )*
+                }
+            }
+        }
+    };
+}

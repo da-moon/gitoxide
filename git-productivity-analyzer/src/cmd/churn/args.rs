@@ -13,12 +13,4 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-impl From<Args> for crate::sdk::churn::Options {
-    fn from(a: Args) -> Self {
-        Self {
-            repo: a.common.into(),
-            per_file: a.per_file,
-            author: a.author.map(|s| s.to_lowercase()),
-        }
-    }
-}
+crate::impl_from_args_author!(Args, crate::sdk::churn::Options { per_file });
