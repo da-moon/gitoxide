@@ -42,6 +42,7 @@ fn empty_repository() {
         .args(["commit-size", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .expect("failed to execute process");
+    // The command may fail on an empty repository but should not panic
     // Command should not crash on empty repositories
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.trim().is_empty() || stdout.contains("No commits") || stdout.contains("0"));
