@@ -29,6 +29,7 @@ pub struct CommonArgs {
 /// ```
 #[macro_export]
 macro_rules! impl_from_args {
+    // Primary arm: no explicit dest=>src mappings
     ($args:ty, $opts:ty { $($field:ident),* $(,)? }) => {
         impl From<$args> for $opts {
             fn from(a: $args) -> Self {
@@ -40,24 +41,8 @@ macro_rules! impl_from_args {
         }
     };
 
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }) => {
-        impl From<$args> for $opts {
-            fn from(a: $args) -> Self {
-                Self {
-                    repo: a.common.into(),
-                    $( $field: a.$field, )*
-                    $( $dest: a.$src, )*
-                }
-            }
-        }
-    };
-}
-
-/// Like [`impl_from_args`] but automatically lower-cases the optional
-/// `author` field during conversion.
-#[macro_export]
-macro_rules! impl_from_args_author {
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? }) => {
+    // Primary arm with lowercase author
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, lowercase_author) => {
         impl From<$args> for $opts {
             fn from(a: $args) -> Self {
                 Self {
@@ -69,7 +54,21 @@ macro_rules! impl_from_args_author {
         }
     };
 
+    // Secondary arm: with dest=>src mappings
     ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    $( $field: a.$field, )*
+                    $( $dest: a.$src, )*
+                }
+            }
+        }
+    };
+
+    // Secondary arm with dest=>src mappings and lowercase author
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }, lowercase_author) => {
         impl From<$args> for $opts {
             fn from(a: $args) -> Self {
                 Self {

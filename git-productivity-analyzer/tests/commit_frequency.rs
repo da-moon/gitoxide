@@ -97,5 +97,8 @@ fn json_output() {
         ])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert!(json.get("commits_per_day").is_some());
+    assert!(json.get("commits_per_week").is_some());
+    assert!(json.get("active_days_per_author").is_some());
 }

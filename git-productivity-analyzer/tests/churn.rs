@@ -103,5 +103,12 @@ fn json_output() {
         .args(["--json", "churn", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let totals = json.get("totals").expect("missing totals");
+    let map = totals.as_object().expect("totals not object");
+    assert!(!map.is_empty(), "expected at least one entry");
+    for entry in map.values() {
+        assert!(entry.get("added").is_some());
+        assert!(entry.get("removed").is_some());
+    }
 }

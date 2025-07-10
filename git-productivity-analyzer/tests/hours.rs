@@ -94,7 +94,9 @@ fn json_output() {
         .args(["--json", "hours", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert!(json.get("total_hours").is_some());
+    assert!(json.get("total_commits").is_some());
 }
 
 #[test]

@@ -20,4 +20,4 @@ pub struct Args {
     pub depth: usize,
 }
 
-crate::impl_from_args_author!(Args, crate::sdk::ownership::Options { path, depth });
+crate::impl_from_args!(Args, crate::sdk::ownership::Options { path, depth }, lowercase_author);
