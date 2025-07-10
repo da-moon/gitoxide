@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::{self, File};
 use std::process::Command;
 use tempfile::TempDir;
@@ -70,14 +69,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn ownership_default() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["ownership", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -88,7 +83,7 @@ fn ownership_default() {
 #[test]
 fn ownership_json() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -99,4 +94,39 @@ fn ownership_json() {
     assert!(obj.contains_key("docs"));
     let src = obj.get("src").unwrap().as_object().unwrap();
     assert!(src.contains_key("Alice <a@example.com>"));
+}
+
+#[test]
+fn ownership_depth() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "ownership",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--depth",
+            "0",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.lines().any(|l| l.starts_with(".")));
+}
+
+#[test]
+fn ownership_path_filter() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "ownership",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--path",
+            "src/*",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.contains("src"));
+    assert!(!out.contains("docs"));
 }

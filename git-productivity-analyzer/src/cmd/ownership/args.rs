@@ -20,4 +20,13 @@ pub struct Args {
     pub depth: usize,
 }
 
-crate::impl_from_args!(Args, crate::sdk::ownership::Options { path, author, depth });
+impl From<Args> for crate::sdk::ownership::Options {
+    fn from(a: Args) -> Self {
+        Self {
+            repo: a.common.into(),
+            path: a.path,
+            author: a.author.map(|s| s.to_lowercase()),
+            depth: a.depth,
+        }
+    }
+}

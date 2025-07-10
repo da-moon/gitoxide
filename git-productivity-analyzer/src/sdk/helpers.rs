@@ -62,10 +62,9 @@ macro_rules! impl_analyzer_boilerplate {
 pub fn author_matches(author: &gix::actor::SignatureRef<'_>, filter: &Option<String>) -> bool {
     match filter {
         Some(pattern) => {
-            let pat = pattern.to_lowercase();
             let name = author.name.to_str_lossy().to_lowercase();
             let email = author.email.to_str_lossy().to_lowercase();
-            name.contains(&pat) || email.contains(&pat)
+            name.contains(pattern) || email.contains(pattern)
         }
         None => true,
     }

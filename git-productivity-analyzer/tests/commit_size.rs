@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -36,14 +35,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["commit-size", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -53,7 +48,7 @@ fn default_run() {
 #[test]
 fn percentiles() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "--json",
             "commit-size",

@@ -1,3 +1,4 @@
+use assert_cmd::cargo::cargo_bin;
 use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
@@ -60,4 +61,8 @@ pub fn init_repo_with_merge() -> TempDir {
         ],
     );
     dir
+}
+
+pub fn bin_path() -> std::path::PathBuf {
+    cargo_bin("git-productivity-analyzer")
 }

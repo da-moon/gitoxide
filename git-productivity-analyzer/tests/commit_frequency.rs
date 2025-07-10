@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -39,14 +38,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["commit-frequency", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -58,7 +53,7 @@ fn default_run() {
 #[test]
 fn author_filter() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "commit-frequency",
             "--working-dir",
@@ -76,7 +71,7 @@ fn author_filter() {
 #[test]
 fn author_filter_no_matches() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "commit-frequency",
             "--working-dir",
@@ -88,4 +83,19 @@ fn author_filter_no_matches() {
         .unwrap();
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.trim().is_empty() || out.contains("no results") || out.contains("No commits"));
+}
+
+#[test]
+fn json_output() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "--json",
+            "commit-frequency",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
 }

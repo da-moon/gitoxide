@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -50,11 +49,6 @@ fn init_repo_with_merge() -> TempDir {
     util::init_repo_with_merge()
 }
 
-/// Path to the compiled binary under test.
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 /// Verify `frecency` on an empty repository produces no output, does not panic,
 /// and exits with code zero.
@@ -66,7 +60,7 @@ fn frecency_empty_repository() {
         .output()
         .expect("failed to init repo");
 
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["frecency", "--working-dir", temp.path().to_str().unwrap(), "--now", NOW])
         .output()
         .expect("failed to run frecency");
@@ -80,7 +74,7 @@ fn frecency_empty_repository() {
 /// Verify `--order ascending` flips the default descending order.
 fn order_descending_and_ascending() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["frecency", "--working-dir", dir.path().to_str().unwrap(), "--now", NOW])
         .output()
         .unwrap();
@@ -88,7 +82,7 @@ fn order_descending_and_ascending() {
     let first = out.lines().next().unwrap();
     assert!(first.contains("file2.txt"));
 
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "frecency",
             "--working-dir",
@@ -109,7 +103,7 @@ fn order_descending_and_ascending() {
 /// Ensure path filtering and commit limiting behave correctly.
 fn path_filter_and_max_commits() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "frecency",
             "--working-dir",
@@ -127,7 +121,7 @@ fn path_filter_and_max_commits() {
     assert!(text.contains("file2.txt"));
     assert!(!text.contains("file0.txt"));
 
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "frecency",
             "--working-dir",
@@ -146,7 +140,7 @@ fn path_filter_and_max_commits() {
 #[test]
 fn path_only() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "frecency",
             "--working-dir",
@@ -168,7 +162,7 @@ fn path_only() {
 /// Validate that JSON output is well-formed when `--json` is used.
 fn json_output() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args([
             "--json",
             "frecency",
@@ -186,7 +180,7 @@ fn json_output() {
 /// Ensure merge commits are ignored when scoring files.
 fn merge_commits_skipped() {
     let dir = init_repo_with_merge();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["frecency", "--working-dir", dir.path().to_str().unwrap(), "--now", NOW])
         .output()
         .unwrap();

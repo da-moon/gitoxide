@@ -13,4 +13,12 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-crate::impl_from_args!(Args, crate::sdk::time_of_day::Options { bins, author });
+impl From<Args> for crate::sdk::time_of_day::Options {
+    fn from(a: Args) -> Self {
+        Self {
+            repo: a.common.into(),
+            bins: a.bins,
+            author: a.author.map(|s| s.to_lowercase()),
+        }
+    }
+}

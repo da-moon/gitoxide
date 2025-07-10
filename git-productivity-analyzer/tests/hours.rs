@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -48,14 +47,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["hours", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -65,7 +60,7 @@ fn default_run() {
 #[test]
 fn show_pii() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["hours", "--working-dir", dir.path().to_str().unwrap(), "--show-pii"])
         .output()
         .unwrap();
@@ -75,7 +70,7 @@ fn show_pii() {
 #[test]
 fn file_stats() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["hours", "--working-dir", dir.path().to_str().unwrap(), "--file-stats"])
         .output()
         .unwrap();
@@ -85,7 +80,7 @@ fn file_stats() {
 #[test]
 fn line_stats() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["hours", "--working-dir", dir.path().to_str().unwrap(), "--line-stats"])
         .output()
         .unwrap();
@@ -95,7 +90,7 @@ fn line_stats() {
 #[test]
 fn json_output() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["--json", "hours", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -111,12 +106,12 @@ fn since_until() {
         .output()
         .unwrap();
     let tag1 = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let status = Command::new(bin())
+    let status = Command::new(util::bin_path())
         .args(["--since", &tag1, "hours", "--working-dir", dir.path().to_str().unwrap()])
         .status()
         .unwrap();
     assert!(status.success());
-    let status = Command::new(bin())
+    let status = Command::new(util::bin_path())
         .args(["--until", &tag1, "hours", "--working-dir", dir.path().to_str().unwrap()])
         .status()
         .unwrap();

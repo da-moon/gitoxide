@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -73,14 +72,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn churn_by_author() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["churn", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -92,11 +87,21 @@ fn churn_by_author() {
 #[test]
 fn churn_per_file() {
     let dir = init_repo();
-    let output = Command::new(bin())
+    let output = Command::new(util::bin_path())
         .args(["churn", "--working-dir", dir.path().to_str().unwrap(), "--per-file"])
         .output()
         .unwrap();
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("a.txt"));
     assert!(out.contains("b.txt"));
+}
+
+#[test]
+fn json_output() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args(["--json", "churn", "--working-dir", dir.path().to_str().unwrap()])
+        .output()
+        .unwrap();
+    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
 }
