@@ -97,6 +97,59 @@ fn churn_per_file() {
 }
 
 #[test]
+fn author_filter() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "churn",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--author",
+            "alice",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.contains("Alice"));
+    assert!(!out.contains("Bob"));
+}
+
+#[test]
+fn author_filter_case_insensitive() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "churn",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--author",
+            "ALICE",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.contains("Alice"));
+    assert!(!out.contains("Bob"));
+}
+
+#[test]
+fn author_filter_no_matches() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "churn",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--author",
+            "nonexistent",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.trim().is_empty() || out.contains("no results") || out.contains("No commits"));
+}
+
+#[test]
 fn json_output() {
     let dir = init_repo();
     let output = Command::new(util::bin_path())

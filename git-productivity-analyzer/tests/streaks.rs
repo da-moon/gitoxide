@@ -82,5 +82,9 @@ fn json_output() {
         .args(["--json", "streaks", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let obj = json.as_object().expect("expected JSON object");
+    if let Some(val) = obj.values().next() {
+        assert!(val.is_number(), "streak value should be numeric");
+    }
 }

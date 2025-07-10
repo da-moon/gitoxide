@@ -85,5 +85,7 @@ fn json_output() {
         .args(["--json", "time-of-day", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let bins = json.get("bins").expect("missing bins");
+    assert!(bins.is_array(), "bins should be an array");
 }
