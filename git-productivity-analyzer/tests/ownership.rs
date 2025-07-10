@@ -130,3 +130,20 @@ fn ownership_path_filter() {
     assert!(out.contains("src"));
     assert!(!out.contains("docs"));
 }
+
+#[test]
+fn ownership_path_filter_no_match() {
+    let dir = init_repo();
+    let output = Command::new(util::bin_path())
+        .args([
+            "ownership",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--path",
+            "no_such_path/*",
+        ])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.trim().is_empty() || out.contains("No files matched") || out.contains("no files found"));
+}

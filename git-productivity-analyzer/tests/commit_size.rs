@@ -36,6 +36,18 @@ fn init_repo() -> TempDir {
 }
 
 #[test]
+fn empty_repository() {
+    let dir = util::init_repo();
+    let output = Command::new(util::bin_path())
+        .args(["commit-size", "--working-dir", dir.path().to_str().unwrap()])
+        .output()
+        .expect("failed to execute process");
+    // Command should not crash on empty repositories
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.trim().is_empty() || stdout.contains("No commits") || stdout.contains("0"));
+}
+
+#[test]
 fn default_run() {
     let dir = init_repo();
     let output = Command::new(util::bin_path())

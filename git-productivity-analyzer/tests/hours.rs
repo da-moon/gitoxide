@@ -108,14 +108,33 @@ fn since_until() {
         .output()
         .unwrap();
     let tag1 = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let status = Command::new(util::bin_path())
-        .args(["--since", &tag1, "hours", "--working-dir", dir.path().to_str().unwrap()])
-        .status()
+    let output_since = Command::new(util::bin_path())
+        .args([
+            "--since",
+            &tag1,
+            "--json",
+            "hours",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+        ])
+        .output()
         .unwrap();
-    assert!(status.success());
-    let status = Command::new(util::bin_path())
-        .args(["--until", &tag1, "hours", "--working-dir", dir.path().to_str().unwrap()])
-        .status()
+    assert!(output_since.status.success());
+    let json_since: serde_json::Value = serde_json::from_slice(&output_since.stdout).unwrap();
+    assert!(json_since.get("total_commits").is_some());
+
+    let output_until = Command::new(util::bin_path())
+        .args([
+            "--until",
+            &tag1,
+            "--json",
+            "hours",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+        ])
+        .output()
         .unwrap();
-    assert!(status.success());
+    assert!(output_until.status.success());
+    let json_until: serde_json::Value = serde_json::from_slice(&output_until.stdout).unwrap();
+    assert!(json_until.get("total_commits").is_some());
 }

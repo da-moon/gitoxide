@@ -145,6 +145,10 @@ fn author_filter_no_matches() {
         ])
         .output()
         .unwrap();
+    assert!(
+        output.status.success(),
+        "Process did not exit successfully for no-match author filter"
+    );
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.trim().is_empty() || out.contains("no results") || out.contains("No commits"));
 }
