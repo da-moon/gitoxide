@@ -72,10 +72,7 @@ fn init_repo() -> TempDir {
 #[test]
 fn ownership_default() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["ownership", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["ownership", "--working-dir", dir.path().to_str().unwrap()]);
     assert!(output.status.success());
     assert!(!output.stdout.is_empty());
 }
@@ -83,11 +80,7 @@ fn ownership_default() {
 #[test]
 fn ownership_json() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
-    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let v = util::run_json(&["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()]);
     let obj = v.as_object().expect("top-level JSON object");
     assert!(obj.contains_key("."));
     assert!(obj.contains_key("src"));
@@ -99,16 +92,13 @@ fn ownership_json() {
 #[test]
 fn ownership_depth() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "ownership",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--depth",
-            "0",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "ownership",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--depth",
+        "0",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.lines().any(|l| l.starts_with(".")));
 }
@@ -116,16 +106,13 @@ fn ownership_depth() {
 #[test]
 fn ownership_path_filter() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "ownership",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--path",
-            "src/*",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "ownership",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--path",
+        "src/*",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("src"));
     assert!(!out.contains("docs"));
@@ -134,16 +121,13 @@ fn ownership_path_filter() {
 #[test]
 fn ownership_path_filter_no_match() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "ownership",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--path",
-            "no_such_path/*",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "ownership",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--path",
+        "no_such_path/*",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.trim().is_empty() || out.contains("No files matched") || out.contains("no files found"));
 }

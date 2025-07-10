@@ -1,4 +1,5 @@
 use assert_cmd::cargo::cargo_bin;
+use serde_json::Value;
 use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
@@ -65,4 +66,12 @@ pub fn init_repo_with_merge() -> TempDir {
 
 pub fn bin_path() -> std::path::PathBuf {
     cargo_bin("git-productivity-analyzer")
+}
+
+pub fn run(args: &[&str]) -> std::process::Output {
+    Command::new(bin_path()).args(args).output().unwrap()
+}
+
+pub fn run_json(args: &[&str]) -> serde_json::Value {
+    serde_json::from_slice(&run(args).stdout).unwrap()
 }

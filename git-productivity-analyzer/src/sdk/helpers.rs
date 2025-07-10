@@ -60,16 +60,13 @@ macro_rules! impl_analyzer_boilerplate {
 }
 
 /// Return `true` if `author` matches the optional `filter` string.
-///
-/// **Note**: `filter` must already be in lowercase.  Callers are responsible for
-/// converting the input to lowercase before invoking this function.  This avoids
-/// repeated allocations and keeps matching case-insensitive.
 pub fn author_matches(author: &gix::actor::SignatureRef<'_>, filter: &Option<String>) -> bool {
     match filter {
         Some(pattern) => {
+            let pat = pattern.to_lowercase();
             let name = author.name.to_str_lossy().to_lowercase();
             let email = author.email.to_str_lossy().to_lowercase();
-            name.contains(pattern) || email.contains(pattern)
+            name.contains(&pat) || email.contains(&pat)
         }
         None => true,
     }

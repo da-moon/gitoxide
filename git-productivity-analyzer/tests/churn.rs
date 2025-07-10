@@ -75,10 +75,7 @@ fn init_repo() -> TempDir {
 #[test]
 fn churn_by_author() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["churn", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["churn", "--working-dir", dir.path().to_str().unwrap()]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(out.contains("Bob"));
@@ -87,10 +84,7 @@ fn churn_by_author() {
 #[test]
 fn churn_per_file() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["churn", "--working-dir", dir.path().to_str().unwrap(), "--per-file"])
-        .output()
-        .unwrap();
+    let output = util::run(&["churn", "--working-dir", dir.path().to_str().unwrap(), "--per-file"]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("a.txt"));
     assert!(out.contains("b.txt"));
@@ -99,16 +93,13 @@ fn churn_per_file() {
 #[test]
 fn author_filter() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "churn",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "alice",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "churn",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "alice",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(!out.contains("Bob"));
@@ -117,16 +108,13 @@ fn author_filter() {
 #[test]
 fn author_filter_case_insensitive() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "churn",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "ALICE",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "churn",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "ALICE",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(!out.contains("Bob"));
@@ -135,16 +123,13 @@ fn author_filter_case_insensitive() {
 #[test]
 fn author_filter_no_matches() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "churn",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "nonexistent",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "churn",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "nonexistent",
+    ]);
     assert!(
         output.status.success(),
         "Process did not exit successfully for no-match author filter"
@@ -156,11 +141,7 @@ fn author_filter_no_matches() {
 #[test]
 fn json_output() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["--json", "churn", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let json = util::run_json(&["--json", "churn", "--working-dir", dir.path().to_str().unwrap()]);
     let totals = json.get("totals").expect("missing totals");
     let map = totals.as_object().expect("totals not object");
     assert!(!map.is_empty(), "expected at least one entry");

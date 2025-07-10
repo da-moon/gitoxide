@@ -60,10 +60,7 @@ fn frecency_empty_repository() {
         .output()
         .expect("failed to init repo");
 
-    let output = Command::new(util::bin_path())
-        .args(["frecency", "--working-dir", temp.path().to_str().unwrap(), "--now", NOW])
-        .output()
-        .expect("failed to run frecency");
+    let output = util::run(&["frecency", "--working-dir", temp.path().to_str().unwrap(), "--now", NOW]);
 
     assert!(output.status.success());
     assert!(output.stdout.is_empty());
@@ -74,26 +71,20 @@ fn frecency_empty_repository() {
 /// Verify `--order ascending` flips the default descending order.
 fn order_descending_and_ascending() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["frecency", "--working-dir", dir.path().to_str().unwrap(), "--now", NOW])
-        .output()
-        .unwrap();
+    let output = util::run(&["frecency", "--working-dir", dir.path().to_str().unwrap(), "--now", NOW]);
     let out = String::from_utf8_lossy(&output.stdout);
     let first = out.lines().next().unwrap();
     assert!(first.contains("file2.txt"));
 
-    let output = Command::new(util::bin_path())
-        .args([
-            "frecency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--order",
-            "ascending",
-            "--now",
-            NOW,
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "frecency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--order",
+        "ascending",
+        "--now",
+        NOW,
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     let first = out.lines().next().unwrap();
     assert!(first.contains("file0.txt"));
@@ -103,36 +94,30 @@ fn order_descending_and_ascending() {
 /// Ensure path filtering and commit limiting behave correctly.
 fn path_filter_and_max_commits() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "frecency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--paths",
-            "file1.txt",
-            "file2.txt",
-            "--now",
-            NOW,
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "frecency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--paths",
+        "file1.txt",
+        "file2.txt",
+        "--now",
+        NOW,
+    ]);
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.contains("file1.txt"));
     assert!(text.contains("file2.txt"));
     assert!(!text.contains("file0.txt"));
 
-    let output = Command::new(util::bin_path())
-        .args([
-            "frecency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--max-commits",
-            "1",
-            "--now",
-            NOW,
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "frecency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--max-commits",
+        "1",
+        "--now",
+        NOW,
+    ]);
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.lines().count() == 1);
 }
@@ -140,17 +125,14 @@ fn path_filter_and_max_commits() {
 #[test]
 fn path_only() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "frecency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--path-only",
-            "--now",
-            NOW,
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "frecency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--path-only",
+        "--now",
+        NOW,
+    ]);
     let text = String::from_utf8_lossy(&output.stdout);
     // each line should contain exactly one whitespace-separated field
     for line in text.lines() {
@@ -162,28 +144,21 @@ fn path_only() {
 /// Validate that JSON output is well-formed when `--json` is used.
 fn json_output() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "--json",
-            "frecency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--now",
-            NOW,
-        ])
-        .output()
-        .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let _ = util::run_json(&[
+        "--json",
+        "frecency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--now",
+        NOW,
+    ]);
 }
 
 #[test]
 /// Ensure merge commits are ignored when scoring files.
 fn merge_commits_skipped() {
     let dir = init_repo_with_merge();
-    let output = Command::new(util::bin_path())
-        .args(["frecency", "--working-dir", dir.path().to_str().unwrap(), "--now", NOW])
-        .output()
-        .unwrap();
+    let output = util::run(&["frecency", "--working-dir", dir.path().to_str().unwrap(), "--now", NOW]);
     let text = String::from_utf8_lossy(&output.stdout);
     assert_eq!(text.lines().count(), 3);
     let first = text.lines().next().unwrap();

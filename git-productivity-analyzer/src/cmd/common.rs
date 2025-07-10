@@ -29,36 +29,47 @@ pub struct CommonArgs {
 /// ```
 #[macro_export]
 macro_rules! impl_from_args {
-    // Primary arm: no explicit dest=>src mappings
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? } $(, $lc:ident)? ) => {
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }) => {
         impl From<$args> for $opts {
             fn from(a: $args) -> Self {
                 Self {
                     repo: a.common.into(),
-                    $( author: {
-                        let mut auth = a.author;
-                        let _ = stringify!($lc);
-                        auth = auth.map(|s| s.to_lowercase());
-                        auth
-                    }, )?
                     $( $field: a.$field, )*
                 }
             }
         }
     };
 
-    // Secondary arm: with dest=>src mappings
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? } $(, $lc:ident)? ) => {
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, lowercase_author) => {
         impl From<$args> for $opts {
             fn from(a: $args) -> Self {
                 Self {
                     repo: a.common.into(),
-                    $( author: {
-                        let mut auth = a.author;
-                        let _ = stringify!($lc);
-                        auth = auth.map(|s| s.to_lowercase());
-                        auth
-                    }, )?
+                    author: a.author.map(|s| s.to_lowercase()),
+                    $( $field: a.$field, )*
+                }
+            }
+        }
+    };
+
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    $( $field: a.$field, )*
+                    $( $dest: a.$src, )*
+                }
+            }
+        }
+    };
+
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }, lowercase_author) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    author: a.author.map(|s| s.to_lowercase()),
                     $( $field: a.$field, )*
                     $( $dest: a.$src, )*
                 }

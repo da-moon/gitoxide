@@ -48,10 +48,7 @@ fn init_repo() -> TempDir {
 #[test]
 fn streaks_default() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["streaks", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["streaks", "--working-dir", dir.path().to_str().unwrap()]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(out.contains("Bob"));
@@ -60,16 +57,13 @@ fn streaks_default() {
 #[test]
 fn streaks_filtered() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args([
-            "streaks",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "Alice",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "streaks",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "Alice",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(!out.contains("Bob"));
@@ -78,11 +72,7 @@ fn streaks_filtered() {
 #[test]
 fn json_output() {
     let dir = init_repo();
-    let output = Command::new(util::bin_path())
-        .args(["--json", "streaks", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let json = util::run_json(&["--json", "streaks", "--working-dir", dir.path().to_str().unwrap()]);
     let obj = json.as_object().expect("expected JSON object");
     if let Some(val) = obj.values().next() {
         assert!(val.is_number(), "streak value should be numeric");
