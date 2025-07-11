@@ -144,14 +144,47 @@ fn path_only() {
 /// Validate that JSON output is well-formed when `--json` is used.
 fn json_output() {
     let dir = init_repo();
-    let _ = util::run_json(&[
-        "--json",
-        "frecency",
-        "--working-dir",
-        dir.path().to_str().unwrap(),
-        "--now",
-        NOW,
-    ]);
+    let output = Command::new(bin())
+        .args([
+            "--json",
+            "frecency",
+            "--working-dir",
+            dir.path().to_str().unwrap(),
+            "--now",
+            NOW,
+        ])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    
+    use util::json_test_helpers::*;
+    
+    // Validate that it's an array with the expected structure
+    let required_fields = &["path", "score"];
+    let arr = validate_object_array(&v, required_fields, "Frecency results");
+    assert_array_length(arr, 3, "Frecency results");
+    
+    // Check each entry's specific values
+    for entry in arr {
+        let obj = assert_json_object(entry, "Frecency entry");
+        
+        let path = assert_string(assert_contains_key(obj, "path", "Frecency entry"), "path");
+        let score = assert_number(assert_contains_key(obj, "score", "Frecency entry"), "score");
+        
+        // Path should be one of our test files
+        assert!(path.starts_with("file") && path.ends_with(".txt"), 
+               "Path should match expected pattern: {}", path);
+        
+        // Score should be positive
+        assert_positive(score, "Frecency score");
+    }
+    
+    // Assert that the results are sorted by score in descending order (default)
+    let scores: Vec<f64> = arr.iter()
+        .map(|entry| assert_number(assert_contains_key(assert_json_object(entry, "score entry"), "score", "score entry"), "score"))
+        .collect();
+    
+    assert_descending_order(&scores, "Frecency scores");
 }
 
 #[test]

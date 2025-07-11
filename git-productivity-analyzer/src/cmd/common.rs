@@ -20,45 +20,48 @@ pub struct CommonArgs {
 
 /// Implements `From<$args>` for `$opts`.
 ///
-/// Each `$field` may optionally specify a source field using `dest => src`.
-/// If omitted, the field name is assumed to be identical in both types.
+/// Each field may optionally specify:
+/// - A source field using `dest => src` (defaults to same name if omitted)
+/// - A transformation using `| transform` (currently supports `lowercase`)
 ///
 /// ```
 /// impl_from_args!(Args, Options { foo, bar => other });
 /// // expands to `foo: a.foo` and `bar: a.other`.
+/// 
+/// impl_from_args!(Args, Options { foo, bar => other | lowercase });
+/// // expands to `foo: a.foo` and `bar: a.other.map(|s| s.to_lowercase())`.
 /// ```
 #[macro_export]
 macro_rules! impl_from_args {
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? }) => {
-        impl From<$args> for $opts {
-            fn from(a: $args) -> Self {
-                Self {
-                    repo: a.common.into(),
-                    $( $field: a.$field, )*
-                }
-            }
-        }
-    };
+    // Helper: no-op if no transform
+    (@apply $expr:expr, ) => { $expr };
+    // Helper: lowercase transform
+    (@apply $expr:expr, lowercase) => { $expr.map(|s| s.to_lowercase()) };
+    
+    // Helper: get source field (defaults to dest if not specified)
+    (@source $a:ident, $dest:ident, $src:ident) => { $a.$src };
+    (@source $a:ident, $dest:ident, ) => { $a.$dest };
 
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, lowercase_author) => {
-        impl From<$args> for $opts {
-            fn from(a: $args) -> Self {
-                Self {
-                    repo: a.common.into(),
-                    author: a.author.map(|s| s.to_lowercase()),
-                    $( $field: a.$field, )*
-                }
-            }
-        }
-    };
 
-    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }) => {
-        impl From<$args> for $opts {
-            fn from(a: $args) -> Self {
+    // Single outer arm: each field may have `=> src` and/or `| transform`
+    ($Args:ty, $Opts:ty {
+        $(
+            $dest:ident
+            $( => $src:ident )?
+            $( | $trans:ident )?
+        ),* $(,)?
+    }) => {
+        impl From<$Args> for $Opts {
+            fn from(a: $Args) -> Self {
                 Self {
                     repo: a.common.into(),
-                    $( $field: a.$field, )*
-                    $( $dest: a.$src, )*
+                    $(
+                        $dest: $crate::impl_from_args!{
+                            @apply
+                            $crate::impl_from_args!(@source a, $dest, $( $src )?),
+                            $( $trans )?
+                        },
+                    )*
                 }
             }
         }

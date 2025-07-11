@@ -78,9 +78,30 @@ fn line_stats() {
 #[test]
 fn json_output() {
     let dir = init_repo();
-    let json = util::run_json(&["--json", "hours", "--working-dir", dir.path().to_str().unwrap()]);
-    assert!(json.get("total_hours").is_some());
-    assert!(json.get("total_commits").is_some());
+    let output = Command::new(bin())
+        .args(["--json", "hours", "--working-dir", dir.path().to_str().unwrap()])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    
+    use util::json_test_helpers::*;
+    
+    // Validate the JSON structure has expected fields
+    let expected_fields = &["total_commits", "total_hours", "total_8h_days", "total_authors"];
+    let obj = validate_analytics_json(&v, expected_fields);
+    
+    // Assert the values make sense for our test data (3 commits)
+    let total_commits = assert_u64(assert_contains_key(obj, "total_commits", "hours output"), "total_commits");
+    assert_eq!(total_commits, 3, "Should have exactly 3 commits");
+    
+    let total_hours = assert_number(assert_contains_key(obj, "total_hours", "hours output"), "total_hours");
+    assert_positive(total_hours, "Total hours");
+    
+    let total_8h_days = assert_number(assert_contains_key(obj, "total_8h_days", "hours output"), "total_8h_days");
+    assert_positive(total_8h_days, "Total 8h days");
+    
+    let total_authors = assert_u64(assert_contains_key(obj, "total_authors", "hours output"), "total_authors");
+    assert_eq!(total_authors, 1, "Should have exactly 1 author (Sebastian Thiel)");
 }
 
 #[test]

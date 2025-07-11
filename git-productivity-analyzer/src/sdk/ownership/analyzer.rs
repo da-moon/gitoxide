@@ -33,7 +33,7 @@ impl Analyzer {
         let mut totals = BTreeMap::<String, BTreeMap<String, u32>>::new();
         crate::sdk::walk_commits(&repo, start, since.as_ref(), false, |id, commit| {
             let author = commit.author().into_diagnostic()?;
-            if !crate::sdk::author_matches(&author, &self.opts.author) {
+            if !crate::sdk::author_matches_optimized(&author, &self.opts.author) {
                 return Ok(());
             }
             let author_string = format!("{} <{}>", author.name, author.email);

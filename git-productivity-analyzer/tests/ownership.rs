@@ -79,14 +79,35 @@ fn ownership_default() {
 
 #[test]
 fn ownership_json() {
-    let dir = init_repo();
-    let v = util::run_json(&["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()]);
-    let obj = v.as_object().expect("top-level JSON object");
-    assert!(obj.contains_key("."));
-    assert!(obj.contains_key("src"));
-    assert!(obj.contains_key("docs"));
-    let src = obj.get("src").unwrap().as_object().unwrap();
-    assert!(src.contains_key("Alice <a@example.com>"));
+    let output = Command::new(bin())
+        .args(["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    
+    use util::json_test_helpers::*;
+    
+    // Validate the JSON structure has expected directories
+    let obj = assert_json_object(&v, "Ownership output");
+    let expected_dirs = &[".", "src", "docs"];
+    
+    for dir in expected_dirs {
+        assert_contains_key(obj, dir, "Ownership output");
+    }
+    
+    // Assert that the root directory has the expected structure
+    let root = assert_json_object(assert_contains_key(obj, ".", "Ownership output"), "Root directory");
+    assert_contains_key(root, "Alice <a@example.com>", "Root directory");
+    
+    // Assert the src directory has Alice's ownership
+    let src = assert_json_object(assert_contains_key(obj, "src", "Ownership output"), "Src directory");
+    let alice_src = assert_number(assert_contains_key(src, "Alice <a@example.com>", "Src directory"), "Alice's src ownership");
+    assert_positive(alice_src, "Alice's ownership percentage in src");
+    
+    // Assert the docs directory has Bob's ownership
+    let docs = assert_json_object(assert_contains_key(obj, "docs", "Ownership output"), "Docs directory");
+    let bob_docs = assert_number(assert_contains_key(docs, "Bob <b@example.com>", "Docs directory"), "Bob's docs ownership");
+    assert_positive(bob_docs, "Bob's ownership percentage in docs");
 }
 
 #[test]

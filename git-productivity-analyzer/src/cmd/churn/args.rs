@@ -13,4 +13,5 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-crate::impl_from_args!(Args, crate::sdk::churn::Options { per_file }, lowercase_author);
+
+crate::impl_from_args!(Args, crate::sdk::churn::Options { per_file, author | lowercase });

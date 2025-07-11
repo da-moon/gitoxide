@@ -13,7 +13,7 @@ pub(crate) fn process_commit(
 ) -> Result<()> {
     let author = commit.author().into_diagnostic()?;
     let author_string = format!("{} <{}>", author.name, author.email);
-    if !crate::sdk::author_matches(&author, author_filter) {
+    if !crate::sdk::author_matches_optimized(&author, author_filter) {
         return Ok(());
     }
     let ts = author.seconds();
