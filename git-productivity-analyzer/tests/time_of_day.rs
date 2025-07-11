@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -43,17 +42,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["time-of-day", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["time-of-day", "--working-dir", dir.path().to_str().unwrap()]);
     assert!(output.status.success());
     assert!(!output.stdout.is_empty());
 }
@@ -61,16 +53,13 @@ fn default_run() {
 #[test]
 fn author_filter() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args([
-            "time-of-day",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "a@example.com",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "time-of-day",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "a@example.com",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<_> = out.lines().collect();
     assert_eq!(lines.len(), 24);
@@ -81,4 +70,12 @@ fn author_filter() {
         .filter_map(|v| v.parse::<u32>().ok())
         .sum();
     assert_eq!(total, 1);
+}
+
+#[test]
+fn json_output() {
+    let dir = init_repo();
+    let json = util::run_json(&["--json", "time-of-day", "--working-dir", dir.path().to_str().unwrap()]);
+    let bins = json.get("bins").expect("missing bins");
+    assert!(bins.is_array(), "bins should be an array");
 }

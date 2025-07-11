@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -46,17 +45,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn streaks_default() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["streaks", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["streaks", "--working-dir", dir.path().to_str().unwrap()]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(out.contains("Bob"));
@@ -65,17 +57,24 @@ fn streaks_default() {
 #[test]
 fn streaks_filtered() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args([
-            "streaks",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "Alice",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "streaks",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "Alice",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Alice"));
     assert!(!out.contains("Bob"));
+}
+
+#[test]
+fn json_output() {
+    let dir = init_repo();
+    let json = util::run_json(&["--json", "streaks", "--working-dir", dir.path().to_str().unwrap()]);
+    let obj = json.as_object().expect("expected JSON object");
+    if let Some(val) = obj.values().next() {
+        assert!(val.is_number(), "streak value should be numeric");
+    }
 }

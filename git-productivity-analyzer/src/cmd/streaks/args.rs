@@ -13,4 +13,4 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-crate::impl_from_args!(Args, crate::sdk::streaks::Options { author | lowercase });
+crate::impl_from_args!(Args, crate::sdk::streaks::Options {}, lowercase_author);

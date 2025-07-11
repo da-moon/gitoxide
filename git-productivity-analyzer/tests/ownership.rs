@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::{self, File};
 use std::process::Command;
 use tempfile::TempDir;
@@ -70,24 +69,16 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn ownership_default() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["ownership", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["ownership", "--working-dir", dir.path().to_str().unwrap()]);
     assert!(output.status.success());
     assert!(!output.stdout.is_empty());
 }
 
 #[test]
 fn ownership_json() {
-    let dir = init_repo();
     let output = Command::new(bin())
         .args(["--json", "ownership", "--working-dir", dir.path().to_str().unwrap()])
         .output()
@@ -117,4 +108,47 @@ fn ownership_json() {
     let docs = assert_json_object(assert_contains_key(obj, "docs", "Ownership output"), "Docs directory");
     let bob_docs = assert_number(assert_contains_key(docs, "Bob <b@example.com>", "Docs directory"), "Bob's docs ownership");
     assert_positive(bob_docs, "Bob's ownership percentage in docs");
+}
+
+#[test]
+fn ownership_depth() {
+    let dir = init_repo();
+    let output = util::run(&[
+        "ownership",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--depth",
+        "0",
+    ]);
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.lines().any(|l| l.starts_with(".")));
+}
+
+#[test]
+fn ownership_path_filter() {
+    let dir = init_repo();
+    let output = util::run(&[
+        "ownership",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--path",
+        "src/*",
+    ]);
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.contains("src"));
+    assert!(!out.contains("docs"));
+}
+
+#[test]
+fn ownership_path_filter_no_match() {
+    let dir = init_repo();
+    let output = util::run(&[
+        "ownership",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--path",
+        "no_such_path/*",
+    ]);
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.trim().is_empty() || out.contains("No files matched") || out.contains("no files found"));
 }

@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -48,47 +47,31 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["hours", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["hours", "--working-dir", dir.path().to_str().unwrap()]);
     assert!(String::from_utf8_lossy(&output.stdout).contains("total commits = 3"));
 }
 
 #[test]
 fn show_pii() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["hours", "--working-dir", dir.path().to_str().unwrap(), "--show-pii"])
-        .output()
-        .unwrap();
+    let output = util::run(&["hours", "--working-dir", dir.path().to_str().unwrap(), "--show-pii"]);
     assert!(String::from_utf8_lossy(&output.stdout).contains("Sebastian Thiel"));
 }
 
 #[test]
 fn file_stats() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["hours", "--working-dir", dir.path().to_str().unwrap(), "--file-stats"])
-        .output()
-        .unwrap();
+    let output = util::run(&["hours", "--working-dir", dir.path().to_str().unwrap(), "--file-stats"]);
     assert!(String::from_utf8_lossy(&output.stdout).contains("total files added"));
 }
 
 #[test]
 fn line_stats() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["hours", "--working-dir", dir.path().to_str().unwrap(), "--line-stats"])
-        .output()
-        .unwrap();
+    let output = util::run(&["hours", "--working-dir", dir.path().to_str().unwrap(), "--line-stats"]);
     assert!(String::from_utf8_lossy(&output.stdout).contains("total lines added"));
 }
 
@@ -130,14 +113,27 @@ fn since_until() {
         .output()
         .unwrap();
     let tag1 = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let status = Command::new(bin())
-        .args(["--since", &tag1, "hours", "--working-dir", dir.path().to_str().unwrap()])
-        .status()
-        .unwrap();
-    assert!(status.success());
-    let status = Command::new(bin())
-        .args(["--until", &tag1, "hours", "--working-dir", dir.path().to_str().unwrap()])
-        .status()
-        .unwrap();
-    assert!(status.success());
+    let output_since = util::run(&[
+        "--since",
+        &tag1,
+        "--json",
+        "hours",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+    ]);
+    assert!(output_since.status.success());
+    let json_since: serde_json::Value = serde_json::from_slice(&output_since.stdout).unwrap();
+    assert!(json_since.get("total_commits").is_some());
+
+    let output_until = util::run(&[
+        "--until",
+        &tag1,
+        "--json",
+        "hours",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+    ]);
+    assert!(output_until.status.success());
+    let json_until: serde_json::Value = serde_json::from_slice(&output_until.stdout).unwrap();
+    assert!(json_until.get("total_commits").is_some());
 }

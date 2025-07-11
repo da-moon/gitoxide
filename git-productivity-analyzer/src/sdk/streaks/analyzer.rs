@@ -14,10 +14,6 @@ impl From<BTreeMap<String, u32>> for Streaks {
 }
 
 impl Streaks {
-    pub fn into_inner(self) -> BTreeMap<String, u32> {
-        self.0
-    }
-
     pub fn as_map(&self) -> &BTreeMap<String, u32> {
         &self.0
     }

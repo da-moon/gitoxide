@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -39,17 +38,10 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
-}
-
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["commit-frequency", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["commit-frequency", "--working-dir", dir.path().to_str().unwrap()]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Sebastian"));
     assert!(out.contains("Eliah"));
@@ -58,16 +50,13 @@ fn default_run() {
 #[test]
 fn author_filter() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args([
-            "commit-frequency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "Sebastian",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "commit-frequency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "Sebastian",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.contains("Sebastian"));
     assert!(!out.contains("Eliah"));
@@ -76,16 +65,27 @@ fn author_filter() {
 #[test]
 fn author_filter_no_matches() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args([
-            "commit-frequency",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--author",
-            "Nonexistent",
-        ])
-        .output()
-        .unwrap();
+    let output = util::run(&[
+        "commit-frequency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--author",
+        "Nonexistent",
+    ]);
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(out.trim().is_empty() || out.contains("no results") || out.contains("No commits"));
+}
+
+#[test]
+fn json_output() {
+    let dir = init_repo();
+    let json = util::run_json(&[
+        "--json",
+        "commit-frequency",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+    ]);
+    assert!(json.get("commits_per_day").is_some());
+    assert!(json.get("commits_per_week").is_some());
+    assert!(json.get("active_days_per_author").is_some());
 }

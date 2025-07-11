@@ -42,6 +42,7 @@ macro_rules! impl_from_args {
     (@source $a:ident, $dest:ident, $src:ident) => { $a.$src };
     (@source $a:ident, $dest:ident, ) => { $a.$dest };
 
+
     // Single outer arm: each field may have `=> src` and/or `| transform`
     ($Args:ty, $Opts:ty {
         $(
@@ -61,6 +62,19 @@ macro_rules! impl_from_args {
                             $( $trans )?
                         },
                     )*
+                }
+            }
+        }
+    };
+
+    ($args:ty, $opts:ty { $($field:ident),* $(,)? }, { $($dest:ident => $src:ident),* $(,)? }, lowercase_author) => {
+        impl From<$args> for $opts {
+            fn from(a: $args) -> Self {
+                Self {
+                    repo: a.common.into(),
+                    author: a.author.map(|s| s.to_lowercase()),
+                    $( $field: a.$field, )*
+                    $( $dest: a.$src, )*
                 }
             }
         }

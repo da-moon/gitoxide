@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -36,35 +35,34 @@ fn init_repo() -> TempDir {
     dir
 }
 
-fn bin() -> std::path::PathBuf {
-    cargo_bin("git-productivity-analyzer")
+#[test]
+fn empty_repository() {
+    let dir = util::init_repo();
+    let output = util::run(&["commit-size", "--working-dir", dir.path().to_str().unwrap()]);
+    // The command may fail on an empty repository but should not panic
+    // Command should not crash on empty repositories
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.trim().is_empty() || stdout.contains("No commits") || stdout.contains("0"));
 }
 
 #[test]
 fn default_run() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args(["commit-size", "--working-dir", dir.path().to_str().unwrap()])
-        .output()
-        .unwrap();
+    let output = util::run(&["commit-size", "--working-dir", dir.path().to_str().unwrap()]);
     assert!(String::from_utf8_lossy(&output.stdout).contains("files per commit"));
 }
 
 #[test]
 fn percentiles() {
     let dir = init_repo();
-    let output = Command::new(bin())
-        .args([
-            "--json",
-            "commit-size",
-            "--working-dir",
-            dir.path().to_str().unwrap(),
-            "--percentiles",
-            "50,100",
-        ])
-        .output()
-        .unwrap();
-    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let v = util::run_json(&[
+        "--json",
+        "commit-size",
+        "--working-dir",
+        dir.path().to_str().unwrap(),
+        "--percentiles",
+        "50,100",
+    ]);
     let expected = serde_json::json!([[50.0, 2], [100.0, 3]]);
     assert_eq!(v.get("line_percentiles").unwrap(), &expected);
 }

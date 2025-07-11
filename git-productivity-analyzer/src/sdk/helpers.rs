@@ -59,6 +59,7 @@ macro_rules! impl_analyzer_boilerplate {
     };
 }
 
+/// Return `true` if `author` matches the optional `filter` string.
 pub fn author_matches(author: &gix::actor::SignatureRef<'_>, filter: &Option<String>) -> bool {
     match filter {
         Some(pattern) => {
