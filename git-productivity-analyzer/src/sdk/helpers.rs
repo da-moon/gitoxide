@@ -73,6 +73,9 @@ pub fn author_matches(author: &gix::actor::SignatureRef<'_>, filter: &Option<Str
 
 /// Optimized version of author_matches that accepts pre-lowercased patterns.
 /// This avoids the redundant to_lowercase() call when the pattern is already lowercased.
+/// 
+/// Note: This function still allocates lowercase strings for author name/email on each call.
+/// For high-volume scenarios, consider using `author_matches_with_buffer` to reuse buffers.
 pub fn author_matches_optimized(author: &gix::actor::SignatureRef<'_>, filter: &Option<String>) -> bool {
     match filter {
         Some(pattern) => {
@@ -80,6 +83,29 @@ pub fn author_matches_optimized(author: &gix::actor::SignatureRef<'_>, filter: &
             let name = author.name.to_str_lossy().to_lowercase();
             let email = author.email.to_str_lossy().to_lowercase();
             name.contains(pattern) || email.contains(pattern)
+        }
+        None => true,
+    }
+}
+
+/// Memory-efficient version of author_matches that reuses string buffers to avoid allocations.
+/// Useful for high-volume scenarios where the same buffer can be reused across many calls.
+pub fn author_matches_with_buffer(
+    author: &gix::actor::SignatureRef<'_>, 
+    filter: &Option<String>,
+    name_buffer: &mut String,
+    email_buffer: &mut String,
+) -> bool {
+    match filter {
+        Some(pattern) => {
+            // Clear and reuse buffers to avoid allocations
+            name_buffer.clear();
+            name_buffer.push_str(&author.name.to_str_lossy().to_lowercase());
+            
+            email_buffer.clear();
+            email_buffer.push_str(&author.email.to_str_lossy().to_lowercase());
+            
+            name_buffer.contains(pattern) || email_buffer.contains(pattern)
         }
         None => true,
     }

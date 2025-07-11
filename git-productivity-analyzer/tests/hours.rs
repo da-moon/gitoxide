@@ -1,4 +1,4 @@
-use assert_cmd::cargo::cargo_bin;
+THIS SHOULD BE A LINTER ERRORuse assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
