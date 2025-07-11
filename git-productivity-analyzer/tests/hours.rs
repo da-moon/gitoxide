@@ -99,7 +99,29 @@ fn json_output() {
         .args(["--json", "hours", "--working-dir", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
-    serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    
+    // Assert specific structure and values instead of just parsing
+    let obj = v.as_object().expect("top-level JSON object");
+    
+    // Assert essential fields exist with correct types
+    assert!(obj.contains_key("total_commits"));
+    assert!(obj.contains_key("total_hours"));
+    assert!(obj.contains_key("total_8h_days"));
+    assert!(obj.contains_key("total_authors"));
+    
+    // Assert the values make sense for our test data (3 commits)
+    let total_commits = obj.get("total_commits").unwrap().as_u64().unwrap();
+    assert_eq!(total_commits, 3, "Should have exactly 3 commits");
+    
+    let total_hours = obj.get("total_hours").unwrap().as_f64().unwrap();
+    assert!(total_hours > 0.0, "Total hours should be positive");
+    
+    let total_8h_days = obj.get("total_8h_days").unwrap().as_f64().unwrap();
+    assert!(total_8h_days > 0.0, "Total 8h days should be positive");
+    
+    let total_authors = obj.get("total_authors").unwrap().as_u64().unwrap();
+    assert_eq!(total_authors, 1, "Should have exactly 1 author (Sebastian Thiel)");
 }
 
 #[test]

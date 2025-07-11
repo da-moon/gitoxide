@@ -68,3 +68,25 @@ fn percentiles() {
     let expected = serde_json::json!([[50.0, 2], [100.0, 3]]);
     assert_eq!(v.get("line_percentiles").unwrap(), &expected);
 }
+
+#[test]
+fn empty_repository() {
+    let dir = util::init_repo();
+    let output = Command::new(bin())
+        .args(["commit-size", "--working-dir", dir.path().to_str().unwrap()])
+        .output()
+        .unwrap();
+    
+    // Assert the process exits with a specific code (0 for success, non-zero for expected failure)
+    assert!(output.status.success() || output.status.code() == Some(1));
+    
+    // Assert stderr does not contain unexpected errors or panics
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("panic"));
+    assert!(!stderr.contains("fatal"));
+    assert!(!stderr.contains("internal error"));
+    
+    // The command may fail on an empty repository but should not panic
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.trim().is_empty() || stdout.contains("No commits") || stdout.contains("0"));
+}

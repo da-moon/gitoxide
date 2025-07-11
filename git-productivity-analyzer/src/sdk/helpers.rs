@@ -70,3 +70,17 @@ pub fn author_matches(author: &gix::actor::SignatureRef<'_>, filter: &Option<Str
         None => true,
     }
 }
+
+/// Optimized version of author_matches that accepts pre-lowercased patterns.
+/// This avoids the redundant to_lowercase() call when the pattern is already lowercased.
+pub fn author_matches_optimized(author: &gix::actor::SignatureRef<'_>, filter: &Option<String>) -> bool {
+    match filter {
+        Some(pattern) => {
+            // Pattern is assumed to be already lowercased
+            let name = author.name.to_str_lossy().to_lowercase();
+            let email = author.email.to_str_lossy().to_lowercase();
+            name.contains(pattern) || email.contains(pattern)
+        }
+        None => true,
+    }
+}
