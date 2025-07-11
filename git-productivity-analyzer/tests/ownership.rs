@@ -93,26 +93,28 @@ fn ownership_json() {
         .output()
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    let obj = v.as_object().expect("top-level JSON object");
     
-    // Assert specific structure and values instead of just key existence
-    assert!(obj.contains_key("."));
-    assert!(obj.contains_key("src"));
-    assert!(obj.contains_key("docs"));
+    use util::json_test_helpers::*;
+    
+    // Validate the JSON structure has expected directories
+    let obj = assert_json_object(&v, "Ownership output");
+    let expected_dirs = &[".", "src", "docs"];
+    
+    for dir in expected_dirs {
+        assert_contains_key(obj, dir, "Ownership output");
+    }
     
     // Assert that the root directory has the expected structure
-    let root = obj.get(".").unwrap().as_object().unwrap();
-    assert!(root.contains_key("Alice <a@example.com>"));
+    let root = assert_json_object(assert_contains_key(obj, ".", "Ownership output"), "Root directory");
+    assert_contains_key(root, "Alice <a@example.com>", "Root directory");
     
     // Assert the src directory has Alice's ownership
-    let src = obj.get("src").unwrap().as_object().unwrap();
-    assert!(src.contains_key("Alice <a@example.com>"));
-    let alice_src = src.get("Alice <a@example.com>").unwrap().as_f64().unwrap();
-    assert!(alice_src > 0.0, "Alice should have ownership percentage in src");
+    let src = assert_json_object(assert_contains_key(obj, "src", "Ownership output"), "Src directory");
+    let alice_src = assert_number(assert_contains_key(src, "Alice <a@example.com>", "Src directory"), "Alice's src ownership");
+    assert_positive(alice_src, "Alice's ownership percentage in src");
     
     // Assert the docs directory has Bob's ownership
-    let docs = obj.get("docs").unwrap().as_object().unwrap();
-    assert!(docs.contains_key("Bob <b@example.com>"));
-    let bob_docs = docs.get("Bob <b@example.com>").unwrap().as_f64().unwrap();
-    assert!(bob_docs > 0.0, "Bob should have ownership percentage in docs");
+    let docs = assert_json_object(assert_contains_key(obj, "docs", "Ownership output"), "Docs directory");
+    let bob_docs = assert_number(assert_contains_key(docs, "Bob <b@example.com>", "Docs directory"), "Bob's docs ownership");
+    assert_positive(bob_docs, "Bob's ownership percentage in docs");
 }

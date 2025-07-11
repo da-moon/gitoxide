@@ -181,38 +181,34 @@ fn json_output() {
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     
-    // Assert specific structure and values instead of just parsing
-    let arr = v.as_array().expect("JSON should be an array");
-    assert_eq!(arr.len(), 3, "Should have exactly 3 files");
+    use util::json_test_helpers::*;
     
-    // Each entry should have proper frecency structure
+    // Validate that it's an array with the expected structure
+    let required_fields = &["path", "score"];
+    let arr = validate_object_array(&v, required_fields, "Frecency results");
+    assert_array_length(arr, 3, "Frecency results");
+    
+    // Check each entry's specific values
     for entry in arr {
-        let obj = entry.as_object().expect("Each entry should be an object");
+        let obj = assert_json_object(entry, "Frecency entry");
         
-        // Assert required fields exist with correct types
-        assert!(obj.contains_key("path"), "Entry should have a path");
-        assert!(obj.contains_key("score"), "Entry should have a score");
-        
-        let path = obj.get("path").unwrap().as_str().unwrap();
-        let score = obj.get("score").unwrap().as_f64().unwrap();
+        let path = assert_string(assert_contains_key(obj, "path", "Frecency entry"), "path");
+        let score = assert_number(assert_contains_key(obj, "score", "Frecency entry"), "score");
         
         // Path should be one of our test files
         assert!(path.starts_with("file") && path.ends_with(".txt"), 
                "Path should match expected pattern: {}", path);
         
         // Score should be positive
-        assert!(score > 0.0, "Score should be positive: {}", score);
+        assert_positive(score, "Frecency score");
     }
     
     // Assert that the results are sorted by score in descending order (default)
     let scores: Vec<f64> = arr.iter()
-        .map(|entry| entry.as_object().unwrap().get("score").unwrap().as_f64().unwrap())
+        .map(|entry| assert_number(assert_contains_key(assert_json_object(entry, "score entry"), "score", "score entry"), "score"))
         .collect();
     
-    for i in 1..scores.len() {
-        assert!(scores[i-1] >= scores[i], 
-               "Scores should be in descending order: {} >= {}", scores[i-1], scores[i]);
-    }
+    assert_descending_order(&scores, "Frecency scores");
 }
 
 #[test]
