@@ -61,3 +61,11 @@ pub fn init_repo_with_merge() -> TempDir {
     );
     dir
 }
+
+pub fn run(args: &[&str]) -> std::process::Output {
+    use assert_cmd::cargo::cargo_bin;
+    Command::new(cargo_bin("git-productivity-analyzer"))
+        .args(args)
+        .output()
+        .unwrap()
+}

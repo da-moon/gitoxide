@@ -16,6 +16,6 @@ pub use helpers::{print_json_or, run_with_analyzer, AnalyzerTrait, IntoAnalyzer}
 
 pub use common::RepoOptions;
 
-pub use helpers::author_matches;
+pub use helpers::author_matches_optimized;
 #[allow(unused_imports)]
 pub use revision::{open_with_range, resolve_since_commit, resolve_start_commit, walk_commits};

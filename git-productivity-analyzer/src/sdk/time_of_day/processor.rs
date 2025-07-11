@@ -5,7 +5,7 @@ use crate::error::Result;
 
 pub(crate) fn process_commit(commit: gix::Commit<'_>, author_filter: &Option<String>, bins: &mut [u32]) -> Result<()> {
     let author = commit.author().into_diagnostic()?;
-    if !crate::sdk::author_matches(&author, author_filter) {
+    if !crate::sdk::author_matches_optimized(&author, author_filter) {
         return Ok(());
     }
     let time = author.time().into_diagnostic()?;

@@ -13,4 +13,4 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-crate::impl_from_args!(Args, crate::sdk::time_of_day::Options { bins, author });
+crate::impl_from_args!(Args, crate::sdk::time_of_day::Options { bins }, { author => author | lowercase });

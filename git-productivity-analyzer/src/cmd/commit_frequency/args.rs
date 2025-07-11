@@ -10,4 +10,4 @@ pub struct Args {
     pub author: Option<String>,
 }
 
-crate::impl_from_args!(Args, crate::sdk::commit_frequency::Options { author });
+crate::impl_from_args!(Args, crate::sdk::commit_frequency::Options { }, { author => author | lowercase });

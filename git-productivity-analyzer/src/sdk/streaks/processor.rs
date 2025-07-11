@@ -10,7 +10,7 @@ pub(crate) fn process_commit(
     by_author: &mut BTreeMap<String, BTreeSet<NaiveDate>>,
 ) -> Result<()> {
     let author = commit.author().into_diagnostic()?;
-    if !crate::sdk::author_matches(&author, author_filter) {
+    if !crate::sdk::author_matches_optimized(&author, author_filter) {
         return Ok(());
     }
     let ts = author.seconds();
