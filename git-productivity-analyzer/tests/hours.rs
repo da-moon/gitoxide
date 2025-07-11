@@ -1,4 +1,4 @@
-THIS SHOULD BE A LINTER ERRORuse assert_cmd::cargo::cargo_bin;
+use assert_cmd::cargo::cargo_bin;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -101,26 +101,23 @@ fn json_output() {
         .unwrap();
     let v: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     
-    // Assert specific structure and values instead of just parsing
-    let obj = v.as_object().expect("top-level JSON object");
+    use util::json_test_helpers::*;
     
-    // Assert essential fields exist with correct types
-    assert!(obj.contains_key("total_commits"));
-    assert!(obj.contains_key("total_hours"));
-    assert!(obj.contains_key("total_8h_days"));
-    assert!(obj.contains_key("total_authors"));
+    // Validate the JSON structure has expected fields
+    let expected_fields = &["total_commits", "total_hours", "total_8h_days", "total_authors"];
+    let obj = validate_analytics_json(&v, expected_fields);
     
     // Assert the values make sense for our test data (3 commits)
-    let total_commits = obj.get("total_commits").unwrap().as_u64().unwrap();
+    let total_commits = assert_u64(assert_contains_key(obj, "total_commits", "hours output"), "total_commits");
     assert_eq!(total_commits, 3, "Should have exactly 3 commits");
     
-    let total_hours = obj.get("total_hours").unwrap().as_f64().unwrap();
-    assert!(total_hours > 0.0, "Total hours should be positive");
+    let total_hours = assert_number(assert_contains_key(obj, "total_hours", "hours output"), "total_hours");
+    assert_positive(total_hours, "Total hours");
     
-    let total_8h_days = obj.get("total_8h_days").unwrap().as_f64().unwrap();
-    assert!(total_8h_days > 0.0, "Total 8h days should be positive");
+    let total_8h_days = assert_number(assert_contains_key(obj, "total_8h_days", "hours output"), "total_8h_days");
+    assert_positive(total_8h_days, "Total 8h days");
     
-    let total_authors = obj.get("total_authors").unwrap().as_u64().unwrap();
+    let total_authors = assert_u64(assert_contains_key(obj, "total_authors", "hours output"), "total_authors");
     assert_eq!(total_authors, 1, "Should have exactly 1 author (Sebastian Thiel)");
 }
 

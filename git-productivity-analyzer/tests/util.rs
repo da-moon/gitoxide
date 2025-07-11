@@ -75,12 +75,12 @@ pub mod json_test_helpers {
     use serde_json::Value;
     
     /// Assert that a JSON value is an object and return it
-    pub fn assert_json_object(value: &Value, context: &str) -> &serde_json::Map<String, Value> {
+    pub fn assert_json_object<'a>(value: &'a Value, context: &'a str) -> &'a serde_json::Map<String, Value> {
         value.as_object().unwrap_or_else(|| panic!("{} should be a JSON object", context))
     }
     
     /// Assert that a JSON value is an array and return it
-    pub fn assert_json_array(value: &Value, context: &str) -> &Vec<Value> {
+    pub fn assert_json_array<'a>(value: &'a Value, context: &'a str) -> &'a Vec<Value> {
         value.as_array().unwrap_or_else(|| panic!("{} should be a JSON array", context))
     }
     
@@ -100,7 +100,7 @@ pub mod json_test_helpers {
     }
     
     /// Assert that a JSON value is a string and return it
-    pub fn assert_string(value: &Value, context: &str) -> &str {
+    pub fn assert_string<'a>(value: &'a Value, context: &'a str) -> &'a str {
         value.as_str().unwrap_or_else(|| panic!("{} should be a string", context))
     }
     
@@ -124,7 +124,7 @@ pub mod json_test_helpers {
     }
     
     /// Validate common JSON structure for analytics output
-    pub fn validate_analytics_json(json: &Value, expected_fields: &[&str]) -> &serde_json::Map<String, Value> {
+    pub fn validate_analytics_json<'a>(json: &'a Value, expected_fields: &'a [&'a str]) -> &'a serde_json::Map<String, Value> {
         let obj = assert_json_object(json, "Analytics output");
         
         // Check that all expected fields are present
@@ -136,14 +136,15 @@ pub mod json_test_helpers {
     }
     
     /// Validate an array of objects where each object has required fields
-    pub fn validate_object_array(json: &Value, required_fields: &[&str], context: &str) -> &Vec<Value> {
+    pub fn validate_object_array<'a>(json: &'a Value, required_fields: &'a [&'a str], context: &'a str) -> &'a Vec<Value> {
         let arr = assert_json_array(json, context);
         
         for (i, entry) in arr.iter().enumerate() {
-            let obj = assert_json_object(entry, &format!("{} entry {}", context, i));
+            let entry_context = format!("{} entry {}", context, i);
+            let obj = assert_json_object(entry, &entry_context);
             
             for field in required_fields {
-                assert_contains_key(obj, field, &format!("{} entry {}", context, i));
+                assert_contains_key(obj, field, &entry_context);
             }
         }
         
